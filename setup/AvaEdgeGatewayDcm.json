@@ -1,0 +1,869 @@
+[
+    {
+        "@id": "dtmi:com:azuremedia:model:AvaEdgeGateway;1",
+        "@context": [
+            "dtmi:iotcentral:context;2",
+            "dtmi:dtdl:context;2"
+        ],
+        "@type": "Interface",
+        "displayName": {
+            "en": "AVA Edge Gateway Model"
+        },
+        "contents": [
+            {
+                "@context": [
+                    "dtmi:iotcentral:context;2",
+                    "dtmi:dtdl:context;2"
+                ],
+                "@id": "dtmi:com:azuremedia:model:AvaEdgeGateway:AvaEdgeGatewayModule;1",
+                "@type": [
+                    "Relationship",
+                    "EdgeModule"
+                ],
+                "displayName": {
+                    "en": "AVA Edge Gateway Module"
+                },
+                "maxMultiplicity": 1,
+                "name": "AvaEdgeGatewayModule",
+                "target": [
+                    "dtmi:com:azuremedia:AvaEdgeGatewayModule;1"
+                ]
+            }
+        ]
+    },
+    {
+        "@id": "dtmi:com:azuremedia:AvaEdgeGatewayModule;1",
+        "@type": "Interface",
+        "contents": [
+            {
+                "@id": "dtmi:com:azuremedia:AvaEdgeGatewayModule:rel;1",
+                "@type": [
+                    "Relationship",
+                    "GatewayDevice"
+                ],
+                "displayName": {
+                    "en": "rel"
+                },
+                "name": "rel",
+                "target": []
+            }
+        ],
+        "displayName": {
+            "en": "AVA Edge Gateway Module"
+        },
+        "extends": [
+            "dtmi:com:azuremedia:AvaEdgeGatewayModule:DeviceInformation;1",
+            "dtmi:com:azuremedia:AvaEdgeGatewayModule:AvaEdgeGatewaySettings;1",
+            "dtmi:com:azuremedia:AvaEdgeGatewayModule:AvaEdgeGatewayInterface;1"
+        ],
+        "@context": [
+            "dtmi:iotcentral:context;2",
+            "dtmi:dtdl:context;2"
+        ]
+    },
+    {
+        "@context": [
+            "dtmi:iotcentral:context;2",
+            "dtmi:dtdl:context;2"
+        ],
+        "@id": "dtmi:com:azuremedia:AvaEdgeGatewayModule:DeviceInformation;1",
+        "@type": "Interface",
+        "displayName": {
+            "en": "IoT Central Onvif Camera Gateway Device Information Interface"
+        },
+        "contents": [
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Processor architecture"
+                },
+                "name": "processorArchitecture",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Hostname"
+                },
+                "name": "hostname",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Platform"
+                },
+                "name": "platform",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "OS Type"
+                },
+                "name": "osType",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Operating system"
+                },
+                "name": "osName",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Total memory"
+                },
+                "name": "totalMemory",
+                "schema": "long"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Software version"
+                },
+                "name": "swVersion",
+                "schema": "string"
+            }
+        ]
+    },
+    {
+        "@context": [
+            "dtmi:iotcentral:context;2",
+            "dtmi:dtdl:context;2"
+        ],
+        "@id": "dtmi:com:azuremedia:AvaEdgeGatewayModule:AvaEdgeGatewaySettings;1",
+        "@type": "Interface",
+        "displayName": {
+            "en": "AVA Edge Gateway Settings"
+        },
+        "contents": [
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Debug Telemetry"
+                },
+                "name": "wpDebugTelemetry",
+                "writable": true,
+                "schema": "boolean"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Debug Routed Message"
+                },
+                "name": "wpDebugRoutedMessage",
+                "writable": true,
+                "schema": "boolean"
+            }
+        ]
+    },
+    {
+        "@context": [
+            "dtmi:iotcentral:context;2",
+            "dtmi:dtdl:context;2"
+        ],
+        "@id": "dtmi:com:azuremedia:AvaEdgeGatewayModule:AvaEdgeGatewayInterface;1",
+        "@type": "Interface",
+        "displayName": {
+            "en": "AVA Edge Gateway Interface"
+        },
+        "contents": [
+            {
+                "@type": "Telemetry",
+                "displayName": {
+                    "en": "System Heartbeat"
+                },
+                "name": "tlSystemHeartbeat",
+                "schema": "integer"
+            },
+            {
+                "@type": "Telemetry",
+                "displayName": {
+                    "en": "Free Memory"
+                },
+                "name": "tlFreeMemory",
+                "schema": "long"
+            },
+            {
+                "@type": "Telemetry",
+                "displayName": {
+                    "en": "Connected Cameras"
+                },
+                "name": "tlConnectedCameras",
+                "schema": "long"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "State"
+                ],
+                "displayName": {
+                    "en": "IoT Central Client State"
+                },
+                "name": "stIoTCentralClientState",
+                "schema": {
+                    "@type": "Enum",
+                    "valueSchema": "string",
+                    "enumValues": [
+                        {
+                            "displayName": {
+                                "en": "disconnected"
+                            },
+                            "enumValue": "disconnected",
+                            "name": "disconnected"
+                        },
+                        {
+                            "displayName": {
+                                "en": "connected"
+                            },
+                            "enumValue": "connected",
+                            "name": "connected"
+                        }
+                    ]
+                }
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "State"
+                ],
+                "displayName": {
+                    "en": "IoT Central Module State"
+                },
+                "name": "stModuleState",
+                "schema": {
+                    "@type": "Enum",
+                    "valueSchema": "string",
+                    "enumValues": [
+                        {
+                            "displayName": {
+                                "en": "inactive"
+                            },
+                            "enumValue": "inactive",
+                            "name": "inactive"
+                        },
+                        {
+                            "displayName": {
+                                "en": "active"
+                            },
+                            "enumValue": "active",
+                            "name": "active"
+                        }
+                    ]
+                }
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Configure Gateway"
+                },
+                "name": "evConfigureGateway",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Create Camera"
+                },
+                "name": "evCreateCamera",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Delete Camera"
+                },
+                "name": "evDeleteCamera",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Module Started"
+                },
+                "name": "evModuleStarted",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Module Stopped"
+                },
+                "name": "evModuleStopped",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Module Restart"
+                },
+                "name": "evModuleRestart",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Camera Discovery Initiated"
+                },
+                "name": "evCameraDiscoveryInitiated",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Camera Discovery Completed"
+                },
+                "name": "evCameraDiscoveryCompleted",
+                "schema": "string"
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Configure Gateway"
+                },
+                "name": "cmConfigureGateway",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Configure Gateway Request"
+                    },
+                    "name": "ConfigureGatewayRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Object"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "iotCentral"
+                                },
+                                "name": "iotCentral",
+                                "schema": {
+                                    "@type": "Object",
+                                    "displayName": {
+                                        "en": "Object"
+                                    },
+                                    "fields": [
+                                        {
+                                            "displayName": {
+                                                "en": "appSubDomain"
+                                            },
+                                            "comment": "The subdomain that identifies your app. Ex. {appsubdomain}.azureiotcentral.com",
+                                            "name": "appSubDomain",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "appBaseDomain"
+                                            },
+                                            "comment": "The base domain your app uses. Ex. appsubdomain.{basedomain.com}",
+                                            "name": "appBaseDomain",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "apiToken"
+                                            },
+                                            "comment": "API token with role App ",
+                                            "name": "apiToken",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "deviceKey"
+                                            },
+                                            "name": "deviceKey",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "scopeId"
+                                            },
+                                            "name": "scopeId",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "dpsProvisioningHost"
+                                            },
+                                            "name": "dpsProvisioningHost",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "deviceModelId"
+                                            },
+                                            "name": "deviceModelId",
+                                            "schema": "string"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "displayName": {
+                                    "en": "blobStorage"
+                                },
+                                "name": "blobStorage",
+                                "schema": {
+                                    "@type": "Object",
+                                    "displayName": {
+                                        "en": "Object"
+                                    },
+                                    "fields": [
+                                        {
+                                            "displayName": {
+                                                "en": "blobConnectionString"
+                                            },
+                                            "name": "blobConnectionString",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "blobPipelineContainer"
+                                            },
+                                            "name": "blobPipelineContainer",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "blobImageCaptureContainer"
+                                            },
+                                            "name": "blobImageCaptureContainer",
+                                            "schema": "string"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Discover Cameras"
+                },
+                "name": "cmDiscoverOnvifCameras",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Discover Onvif Cameras Request"
+                    },
+                    "name": "DiscoverOnvifCamerasRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Discover Onvif Cameras Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Timeout"
+                                },
+                                "name": "DiscoverOnvifCamerasRequestParams_Timeout",
+                                "schema": "integer"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Add Camera"
+                },
+                "name": "cmAddCamera",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Add Camera Request"
+                    },
+                    "name": "AddCameraRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Add Camera Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Camera Id"
+                                },
+                                "name": "AddCameraRequestParams_CameraId",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Camera Name"
+                                },
+                                "name": "AddCameraRequestParams_CameraName",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "IP Address"
+                                },
+                                "name": "AddCameraRequestParams_IpAddress",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Onvif Username"
+                                },
+                                "name": "AddCameraRequestParams_OnvifUsername",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Onvif Password"
+                                },
+                                "name": "AddCameraRequestParams_OnvifPassword",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Delete Camera"
+                },
+                "name": "cmDeleteCamera",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Delete Camera Request"
+                    },
+                    "name": "DeleteCameraRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Delete Camera Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Device Id"
+                                },
+                                "name": "DeleteCameraRequestParams_CameraId",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get Cameras"
+                },
+                "name": "cmGetCameras",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Restart Gateway Module"
+                },
+                "name": "cmRestartGatewayModule",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Restart Gateway Module Request"
+                    },
+                    "name": "RestartGatewayModuleRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Restart Gateway Module Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Timeout"
+                                },
+                                "name": "RestartGatewayModuleRequestParams_Timeout",
+                                "schema": "integer"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Clear Device Cache"
+                },
+                "name": "cmClearDeviceCache",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Clear Pipeline Cache"
+                },
+                "name": "cmClearPipelineCache",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+]

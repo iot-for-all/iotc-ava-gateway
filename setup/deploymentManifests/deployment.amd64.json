@@ -1,0 +1,179 @@
+{
+    "modulesContent": {
+        "$edgeAgent": {
+            "properties.desired": {
+                "schemaVersion": "1.0",
+                "runtime": {
+                    "type": "docker",
+                    "settings": {
+                        "minDockerVersion": "v1.25",
+                        "loggingOptions": "",
+                        "registryCredentials": {
+                            "<CONTAINER_REGISTRY_NAME>": {
+                                "address": "<CONTAINER_REGISTRY_ADDRESS>",
+                                "password": "<CONTAINER_REGISTRY_PASSWORD>",
+                                "username": "<CONTAINER_REGISTRY_NAME>"
+                            }
+                        }
+                    }
+                },
+                "systemModules": {
+                    "edgeAgent": {
+                        "type": "docker",
+                        "settings": {
+                            "image": "mcr.microsoft.com/azureiotedge-agent:1.0",
+                            "createOptions": ""
+                        }
+                    },
+                    "edgeHub": {
+                        "type": "docker",
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "settings": {
+                            "image": "mcr.microsoft.com/azureiotedge-hub:1.0",
+                            "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"5671/tcp\":[{\"HostPort\":\"5671\"}],\"8883/tcp\":[{\"HostPort\":\"8883\"}],\"443/tcp\":[{\"HostPort\":\"443\"}]}}}"
+                        }
+                    }
+                },
+                "modules": {
+                    "AvaEdgeGatewayModule": {
+                        "settings": {
+                            "image": "<MCR_PATH>",
+                            "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"9070/tcp\":[{\"HostPort\":\"9070\"}]},\"Binds\":[\"/data/storage:/data/storage\",\"/data/media:/data/media/\"]}}"
+                        },
+                        "type": "docker",
+                        "env": {
+                            "onvifModuleId": {
+                                "value": "OnvifModule"
+                            },
+                            "avaEdgeModuleId": {
+                                "value": "avaEdge"
+                            },
+                            "deviceModelId": {
+                                "value": "dtmi:com:azuremedia:model:AvaEdgeDevice;1"
+                            }
+                        },
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "version": "1.0"
+                    },
+                    "OnvifModule": {
+                        "settings": {
+                            "image": "mcr.microsoft.com/cameraplatform/ipcamedgemodule",
+                            "createOptions": "{\"HostConfig\":{\"NetworkMode\":\"host\"},\"NetworkingConfig\":{\"EndpointsConfig\":{\"host\":{}}}}"
+                        },
+                        "type": "docker",
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "version": "1.0",
+                        "startupOrder": 1
+                    },
+                    "avaEdge": {
+                        "settings": {
+                            "image": "<MCR_PATH>",
+                            "createOptions": "{\"HostConfig\":{\"LogConfig\":{\"Type\":\"\",\"Config\":{\"max-size\":\"10m\",\"max-file\":\"10\"}},\"IpcMode\":\"host\",\"Binds\":[\"/data/media:/var/media/\",\"/data/storage:/var/lib/videoanalyzer/\"]}}"
+                        },
+                        "type": "docker",
+                        "env": {
+                            "EnableDiagnosticLogging": {
+                                "value": "True"
+                            }
+                        },
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "version": "1.0",
+                        "startupOrder": 2
+                    },
+                    "spatialanalysis": {
+                        "version": "1.0",
+                        "type": "docker",
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "startupOrder": 3,
+                        "settings": {
+                            "image": "<MCR_PATH>",
+                            "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"50051/tcp\":[{\"HostPort\":\"50051\"}]},\"IpcMode\":\"host\",\"Binds\":[\"/tmp/.X11-unix:/tmp/.X11-unix\"],\"Runtime\":\"nvidia\",\"ShmSize\":536870912,\"LogConfig\":{\"Type\":\"json-file\",\"Config\":{\"max-size\":\"10m\",\"max-file\":\"200\"}}}}"
+                        },
+                        "env": {
+                            "DISPLAY": {
+                                "value": ":0"
+                            },
+                            "ARCHON_SHARED_BUFFER_LIMIT": {
+                                "value": "377487360"
+                            },
+                            "ARCHON_LOG_LEVEL": {
+                                "value": "info"
+                            },
+                            "QT_X11_NO_MITSHM": {
+                                "value": "1"
+                            },
+                            "OMP_WAIT_POLICY": {
+                                "value": "PASSIVE"
+                            },
+                            "EULA": {
+                                "value": "accept"
+                            },
+                            "ARCHON_TELEMETRY_IOTHUB": {
+                                "value": "true"
+                            },
+                            "BILLING": {
+                                "value": "https://spatial-analysis.cognitiveservices.azure.com/"
+                            },
+                            "APIKEY": {
+                                "value": "5a7d3ebd0a224e8ab838799fc8685521"
+                            },
+                            "LAUNCHER_TYPE": {
+                                "value": "avaBackend"
+                            },
+                            "ARCHON_GRAPH_READY_TIMEOUT": {
+                                "value": "600"
+                            },
+                            "ORT_TENSORRT_ENGINE_CACHE_ENABLE": {
+                                "value": "1"
+                            },
+                            "ORT_TENSORRT_ENGINE_CACHE_PATH": {
+                                "value": "/data"
+                            },
+                            "ORT_TENSORRT_ENGINE_DECRYPTION_ENABLE": {
+                                "value": "0"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "$edgeHub": {
+            "properties.desired": {
+                "schemaVersion": "1.0",
+                "routes": {
+                    "AvaSignalGateTrigger": "FROM /messages/modules/AvaEdgeGatewayModule/outputs/avaTrigger INTO BrokeredEndpoint(\"/modules/avaEdge/inputs/avaTrigger\")",
+                    "AvaDiagnosticsForwarder": "FROM /messages/modules/avaEdge/outputs/AvaDiagnostics INTO BrokeredEndpoint(\"/modules/AvaEdgeGatewayModule/inputs/avaDiagnostics\")",
+                    "AvaOperationsForwarder": "FROM /messages/modules/avaEdge/outputs/AmsOperational INTO BrokeredEndpoint(\"/modules/AvaEdgeGatewayModule/inputs/avaOperational\")",
+                    "AvaTelemetryForwarder": "FROM /messages/modules/avaEdge/outputs/avaTelemetry INTO BrokeredEndpoint(\"/modules/AvaEdgeGatewayModule/inputs/avaTelemetry\")",
+                    "AvaEdgeGatewayModuleOutput": "FROM /messages/modules/AvaEdgeGatewayModule/outputs/iotc INTO $upstream"
+                },
+                "storeAndForwardConfiguration": {
+                    "timeToLiveSecs": 7200
+                }
+            }
+        },
+        "AvaEdgeGatewayModule": {
+            "properties.desired": {
+                "wpDebugTelemetry": false,
+                "wpDebugRoutedMessage": false
+            }
+        },
+        "avaEdge": {
+            "properties.desired": {
+                "ProvisioningToken": "<AVA_EDGEMODULE_TOKEN>",
+                "ApplicationDataDirectory": "/var/lib/videoanalyzer",
+                "DiagnosticsEventsOutputName": "AvaDiagnostics",
+                "OperationalEventsOutputName": "AvaOperational",
+                "LogLevel": "Verbose",
+                "LogCategories": "Application,Events,MediaPipeline",
+                "AllowUnsecuredEndpoints": true,
+                "TelemetryOptOut": false
+            }
+        }
+    }
+}

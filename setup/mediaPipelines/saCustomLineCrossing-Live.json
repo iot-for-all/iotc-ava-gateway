@@ -1,0 +1,26 @@
+{
+    "@apiVersion": "1.0",
+    "name": "",
+    "properties": {
+        "topologyName": "AvaIotcSACustomOperation",
+        "description": "Analyzing live video with Computer Vision for Spatial Analysis",
+        "parameters": [
+            {
+                "name": "rtspUrl",
+                "value": ""
+            },
+            {
+                "name": "rtspAuthUsername",
+                "value": ""
+            },
+            {
+                "name": "rtspAuthPassword",
+                "value": ""
+            },
+            {
+                "name": "assetName",
+                "value": ""
+            }
+        ]
+    }
+}

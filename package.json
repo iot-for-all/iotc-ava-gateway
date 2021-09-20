@@ -1,0 +1,67 @@
+{
+    "name": "ava-edge-gateway",
+    "version": "3.0.1",
+    "description": "Azure IoT Central gateway module for Azure Media Services AVA Edge",
+    "main": "index.js",
+    "scripts": {
+        "test": "node ./node_modules/jest/bin/jest.js",
+        "eslint": "eslint -c .eslintrc.json --ext .ts ./src",
+        "build": "node ./node_modules/typescript/bin/tsc -p .",
+        "dockerbuild": "node ./scripts/dockerBuild.js --docker-build",
+        "dockerpush": "node ./scripts/dockerBuild.js --docker-push",
+        "preversion": "npm test",
+        "version": "node ./scripts/dockerBuild.js --docker-build",
+        "postversion": "node ./scripts/dockerBuild.js --docker-push",
+        "postinstall": "node ./scripts/setupDevEnvironment.js"
+    },
+    "author": "sseiber",
+    "license": "MIT",
+    "dependencies": {
+        "@azure/storage-blob": "^12.5.0",
+        "@hapi/boom": "^9.1.2",
+        "@hapi/hapi": "^20.1.5",
+        "@hapi/wreck": "^17.1.0",
+        "azure-iot-device": "1.17.4",
+        "azure-iot-device-mqtt": "^1.15.4",
+        "azure-iot-provisioning-device": "1.8.8",
+        "azure-iot-provisioning-device-mqtt": "1.7.8",
+        "azure-iot-security-symmetric-key": "1.7.8",
+        "commander": "^7.2.0",
+        "fs-extra": "^10.0.0",
+        "lodash.get": "^4.4.2",
+        "lodash.set": "^4.3.2",
+        "moment": "^2.29.1",
+        "pjson": "^1.0.9",
+        "spryly": "^2.1.0",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "@types/hapi__hapi": "^20.0.8",
+        "@types/jest": "^26.0.23",
+        "@types/node": "^14.14.37",
+        "@typescript-eslint/eslint-plugin": "^4.28.1",
+        "@typescript-eslint/parser": "^4.28.1",
+        "eslint": "^7.29.0",
+        "eslint-plugin-import": "^2.23.4",
+        "eslint-plugin-jsdoc": "^35.4.1",
+        "jest": "^27.0.6",
+        "ts-jest": "^27.0.3",
+        "typescript": "^4.3.4"
+    },
+    "jest": {
+        "rootDir": "./src/",
+        "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx)$",
+        "moduleFileExtensions": [
+            "ts",
+            "tsx",
+            "js",
+            "json"
+        ],
+        "transform": {
+            ".tsx?": "ts-jest"
+        },
+        "moduleNameMapper": {
+            "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "./__mocks__/fileMock.js"
+        }
+    }
+}

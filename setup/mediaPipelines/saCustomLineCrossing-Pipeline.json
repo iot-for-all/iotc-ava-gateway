@@ -1,0 +1,145 @@
+{
+    "@apiVersion": "1.0",
+    "name": "AvaIotcSACustomOperation",
+    "properties": {
+        "description": "Analyzing Live Video with Computer Vision for Spatial Analysis",
+        "parameters": [
+            {
+                "name": "rtspAuthUserName",
+                "type": "String",
+                "description": "rtsp source user name.",
+                "default": "dummyUserName"
+            },
+            {
+                "name": "rtspAuthPassword",
+                "type": "String",
+                "description": "rtsp source password.",
+                "default": "dummyPassword"
+            },
+            {
+                "name": "rtspUrl",
+                "type": "String",
+                "description": "rtsp Url"
+            },
+            {
+                "name": "assetName",
+                "type": "String",
+                "description": "name of the AMS CVR asset",
+                "default": "lineCrossingAsset"
+            },
+            {
+                "name": "grpcUrl",
+                "type": "String",
+                "description": "inferencing Url",
+                "default": "tcp://spatialanalysis:50051"
+            },
+            {
+                "name": "spatialanalysisusername",
+                "type": "String",
+                "description": "spatialanalysis endpoint username",
+                "default": "not-in-use"
+            },
+            {
+                "name": "spatialanalysispassword",
+                "type": "String",
+                "description": "spatialanalysis endpoint password",
+                "default": "not-in-use"
+            },
+            {
+                "name": "hubSinkOutputName",
+                "type": "String",
+                "description": "hub sink output name",
+                "default": "avaTelemetry"
+            }
+        ],
+        "sources": [
+            {
+                "@type": "#Microsoft.VideoAnalyzer.RtspSource",
+                "name": "rtspSource",
+                "transport": "tcp",
+                "endpoint": {
+                    "@type": "#Microsoft.VideoAnalyzer.UnsecuredEndpoint",
+                    "url": "${rtspUrl}",
+                    "credentials": {
+                        "@type": "#Microsoft.VideoAnalyzer.UsernamePasswordCredentials",
+                        "username": "${rtspAuthUserName}",
+                        "password": "${rtspAuthPassword}"
+                    }
+                }
+            }
+        ],
+        "processors": [
+            {
+                "@type": "#Microsoft.VideoAnalyzer.CognitiveServicesVisionProcessor",
+                "name": "computerVisionExtension",
+                "endpoint": {
+                    "@type": "#Microsoft.VideoAnalyzer.UnsecuredEndpoint",
+                    "url": "${grpcUrl}",
+                    "credentials": {
+                        "@type": "#Microsoft.VideoAnalyzer.UsernamePasswordCredentials",
+                        "username": "${spatialanalysisusername}",
+                        "password": "${spatialanalysispassword}"
+                    }
+                },
+                "image": {
+                    "format": {
+                        "@type": "#Microsoft.VideoAnalyzer.ImageFormatRaw",
+                        "pixelFormat": "bgr24"
+                    }
+                },
+                "samplingOptions": {
+                    "skipSamplesWithoutAnnotation": "false",
+                    "maximumSamplesPerSecond": "15"
+                },
+                "inputs": [
+                    {
+                        "nodeName": "rtspSource",
+                        "outputSelectors": [
+                            {
+                                "property": "mediaType",
+                                "operator": "is",
+                                "value": "video"
+                            }
+                        ]
+                    }
+                ],
+                "operation": {
+                    "@type": "#Microsoft.VideoAnalyzer.SpatialAnalysisCustomOperation",
+                    "extensionConfiguration": "{\"version\":1,\"enabled\":true,\"platformloglevel\":\"info\",\"operationId\":\"cognitiveservices.vision.spatialanalysis-personcrossingline.azurevideoanalytics\",\"parameters\":{\"VISUALIZER_NODE_CONFIG\":\"{\\\"show_debug_video\\\":true}\",\"SINK_CONFIG\":\"{\\\"raw_output\\\":false}\",\"ENABLE_FACE_MASK_CLASSIFIER\":false,\"DETECTOR_NODE_CONFIG\":\"{\\\"gpu_index\\\":0,\\\"batch_size\\\":1}\",\"SPACEANALYTICS_CONFIG\":\"{\\\"lines\\\":[{\\\"line\\\":{\\\"line\\\":[[0.48,0.48],[0.56,0.53]],\\\"name\\\":\\\"door\\\"},\\\"events\\\":[{\\\"threshold\\\":\\\"10\\\",\\\"focus\\\":\\\"bottom_center\\\"}]}]}\",\"ENABLE_FACE_MASK_CLASSIFIER\":false},\"nodesLogLevel\":\"info\",\"platformLogLevel\":\"info\"}"
+                }
+            }
+        ],
+        "sinks": [
+            {
+                "@type": "#Microsoft.VideoAnalyzer.IoTHubMessageSink",
+                "name": "hubSink",
+                "hubOutputName": "${hubSinkOutputName}",
+                "inputs": [
+                    {
+                        "nodeName": "computerVisionExtension"
+                    }
+                ]
+            },
+            {
+                "@type": "#Microsoft.VideoAnalyzer.VideoSink",
+                "name": "videoSink",
+                "videoName": "${assetName}",
+                "inputs": [
+                    {
+                        "nodeName": "rtspSource"
+                    },
+                    {
+                        "nodeName": "computerVisionExtension"
+                    }
+                ],
+                "videoCreationProperties": {
+                    "title": "${assetName}",
+                    "description": "Sample video using SA custom operation",
+                    "segmentLength": "PT30S"
+                },
+                "localMediaCachePath": "/var/lib/videoanalyzer/tmp/",
+                "localMediaCacheMaximumSizeMiB": "2048"
+            }
+        ]
+    }
+}

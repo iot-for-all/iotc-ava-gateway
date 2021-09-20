@@ -1,0 +1,854 @@
+[
+    {
+        "@id": "dtmi:com:azuremedia:model:AvaEdgeDevice;1",
+        "@context": [
+            "dtmi:iotcentral:context;2",
+            "dtmi:dtdl:context;2"
+        ],
+        "@type": "Interface",
+        "displayName": {
+            "en": "AVA Edge Device Model"
+        },
+        "description": "AVA Edge Device Model",
+        "extends": [
+            "dtmi:com:azuremedia:AvaEdgeDevice:DeviceInformation;1",
+            "dtmi:com:azuremedia:AvaEdgeDevice:OnvifCamera;1",
+            "dtmi:com:azuremedia:AvaEdgeDevice:AvaEdgeOperations;1",
+            "dtmi:com:azuremedia:AvaEdgeDevice:AvaEdgeDiagnostics;1",
+            "dtmi:com:azuremedia:AvaEdgeDevice:AiInference;1"
+        ],
+        "contents": []
+    },
+    {
+        "@context": [
+            "dtmi:iotcentral:context;2",
+            "dtmi:dtdl:context;2"
+        ],
+        "@id": "dtmi:com:azuremedia:AvaEdgeDevice:DeviceInformation;1",
+        "@type": "Interface",
+        "displayName": {
+            "en": "Onvif Camera Device Information Interface"
+        },
+        "contents": [
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Manufacturer"
+                },
+                "name": "rpManufacturer",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Model"
+                },
+                "name": "rpModel",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Firmware Version"
+                },
+                "name": "rpFirmwareVersion",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Hardware Id"
+                },
+                "name": "rpHardwareId",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Serial Number"
+                },
+                "name": "rpSerialNumber",
+                "schema": "string"
+            }
+        ]
+    },
+    {
+        "@id": "dtmi:com:azuremedia:AvaEdgeDevice:OnvifCamera;1",
+        "@context": "dtmi:dtdl:context;2",
+        "@type": "Interface",
+        "displayName": {
+            "en": "Onvif Camera Interface"
+        },
+        "contents": [
+            {
+                "@type": "Telemetry",
+                "displayName": {
+                    "en": "System Heartbeat"
+                },
+                "name": "tlSystemHeartbeat",
+                "schema": "integer"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "State"
+                ],
+                "displayName": {
+                    "en": "IoT Central Client State"
+                },
+                "name": "stIoTCentralClientState",
+                "schema": {
+                    "@type": "Enum",
+                    "valueSchema": "string",
+                    "enumValues": [
+                        {
+                            "displayName": {
+                                "en": "disconnected"
+                            },
+                            "enumValue": "disconnected",
+                            "name": "disconnected"
+                        },
+                        {
+                            "displayName": {
+                                "en": "connected"
+                            },
+                            "enumValue": "connected",
+                            "name": "connected"
+                        }
+                    ]
+                }
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "State"
+                ],
+                "displayName": {
+                    "en": "Camera Processing State"
+                },
+                "name": "stCameraProcessingState",
+                "schema": {
+                    "@type": "Enum",
+                    "valueSchema": "string",
+                    "enumValues": [
+                        {
+                            "displayName": {
+                                "en": "inactive"
+                            },
+                            "enumValue": "inactive",
+                            "name": "inactive"
+                        },
+                        {
+                            "displayName": {
+                                "en": "active"
+                            },
+                            "enumValue": "active",
+                            "name": "active"
+                        }
+                    ]
+                }
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Upload Image"
+                },
+                "name": "evUploadImage",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Camera Name"
+                },
+                "name": "rpCameraName",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "IP Address"
+                },
+                "name": "rpIpAddress",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Onvif Username"
+                },
+                "name": "rpOnvifUsername",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Onvif Password"
+                },
+                "name": "rpOnvifPassword",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Image Capture Url"
+                },
+                "name": "rpCaptureImageUrl",
+                "schema": "string"
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get Onvif Camera Properties"
+                },
+                "name": "cmGetOnvifCameraProps",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get Onvif Media Profiles"
+                },
+                "name": "cmGetOnvifMediaProfiles",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get Onvif Rtsp Stream Url"
+                },
+                "name": "cmGetOnvifRtspStreamUrl",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Capture Image Request"
+                    },
+                    "name": "CaptureImageRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Capture Image Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Onvif Media Profile Token"
+                                },
+                                "name": "GetOnvifRtspStreamRequestParams_MediaProfileToken",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Capture Image"
+                },
+                "name": "cmCaptureOnvifImage",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Capture Image Request"
+                    },
+                    "name": "CaptureImageRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Capture Image Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Onvif Media Profile Token"
+                                },
+                                "name": "CaptureOnvifImageRequestParams_MediaProfileToken",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Restart Onvif Camera"
+                },
+                "name": "cmRestartOnvifCamera",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Start AVA Processing"
+                },
+                "name": "cmStartAvaPipeline",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Start AVA Processing Request"
+                    },
+                    "name": "StartAvaPipelineRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Start AVA Processing Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "AVA Topology Pipeline Name"
+                                },
+                                "name": "StartAvaPipelineRequestParams_AvaPipelineTopologyName",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "AVA Live Pipeline Name"
+                                },
+                                "name": "StartAvaPipelineRequestParams_AvaLivePipelineName",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Onvif Media Profile Token"
+                                },
+                                "name": "StartAvaPipelineRequestParams_MediaProfileToken",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Stop AVA Processing"
+                },
+                "name": "cmStopAvaPipeline",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get AVA Processing Status"
+                },
+                "name": "cmGetAvaProcessingStatus",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "CommandResponseParams_StatusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "CommandResponseParams_Message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "@id": "dtmi:com:azuremedia:AvaEdgeDevice:AvaEdgeOperations;1",
+        "@context": "dtmi:dtdl:context;2",
+        "@type": "Interface",
+        "displayName": {
+            "en": "AVA Edge Operations Interface"
+        },
+        "contents": [
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Pipeline Instance Created"
+                },
+                "name": "evPipelineInstanceCreated",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Pipeline Instance Deleted"
+                },
+                "name": "evPipelineInstanceDeleted",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Pipeline Instance Started"
+                },
+                "name": "evPipelineInstanceStarted",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Pipeline Instance Stopped"
+                },
+                "name": "evPipelineInstanceStopped",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Recording Started"
+                },
+                "name": "evRecordingStarted",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Recording Stopped"
+                },
+                "name": "evRecordingStopped",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Recording Available"
+                },
+                "name": "evRecordingAvailable",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Max Inference Capture Time (sec)"
+                },
+                "name": "wpMaxVideoInferenceTime",
+                "writable": true,
+                "schema": "integer"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Host for Video Playback Links"
+                },
+                "name": "wpVideoPlaybackHost",
+                "writable": true,
+                "schema": "string"
+            }
+        ]
+    },
+    {
+        "@id": "dtmi:com:azuremedia:AvaEdgeDevice:AvaEdgeDiagnostics;1",
+        "@context": "dtmi:dtdl:context;2",
+        "@type": "Interface",
+        "displayName": {
+            "en": "AVA Edge Diagnostics Interface"
+        },
+        "contents": [
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Runtime Error"
+                },
+                "name": "evRuntimeError",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Authentication Error"
+                },
+                "name": "evAuthenticationError",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Authorization Error"
+                },
+                "name": "evAuthorizationError",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Data Dropped"
+                },
+                "name": "evDataDropped",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Media Format Error"
+                },
+                "name": "evMediaFormatError",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Media Session Established"
+                },
+                "name": "evMediaSessionEstablished",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Network Error"
+                },
+                "name": "evNetworkError",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Protocol Error"
+                },
+                "name": "evProtocolError",
+                "schema": "string"
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Storage Error"
+                },
+                "name": "evStorageError",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Debug Telemetry"
+                },
+                "name": "wpDebugTelemetry",
+                "writable": true,
+                "schema": "boolean"
+            }
+        ]
+    },
+    {
+        "@id": "dtmi:com:azuremedia:AvaEdgeDevice:AiInference;1",
+        "@context": "dtmi:dtdl:context;2",
+        "@type": "Interface",
+        "displayName": {
+            "en": "AI Inference Interface"
+        },
+        "contents": [
+            {
+                "@type": "Telemetry",
+                "displayName": {
+                    "en": "Inference Entity"
+                },
+                "name": "tlInferenceEntity",
+                "schema": {
+                    "@type": "Object",
+                    "displayName": {
+                        "en": "Object"
+                    },
+                    "fields": [
+                        {
+                            "displayName": {
+                                "en": "value"
+                            },
+                            "name": "value",
+                            "schema": "string"
+                        },
+                        {
+                            "displayName": {
+                                "en": "confidence"
+                            },
+                            "name": "confidence",
+                            "schema": "double"
+                        }
+                    ]
+                }
+            },
+            {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Inference Event Video"
+                },
+                "name": "evInferenceEventVideoUrl",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Inference Timeout (sec)"
+                },
+                "name": "wpInferenceTimeout",
+                "writable": true,
+                "schema": "integer"
+            }
+        ]
+    }
+]
