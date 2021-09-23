@@ -1,9 +1,8 @@
-FROM node:14-slim
+FROM arm64v8/node:14-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/lib/apt/lists/*
 
 ENV DATADIR /data/content
 WORKDIR ${DATADIR}
@@ -31,6 +30,6 @@ HEALTHCHECK \
     --retries=3 \
     CMD curl -f http://localhost:9070/health || exit 1
 
-EXPOSE 9070
+EXPOSE 9229
 
-CMD ["node", "./dist/index"]
+CMD ["node", "--inspect=0.0.0.0:9229", "./dist/index"]

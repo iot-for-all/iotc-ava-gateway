@@ -24,7 +24,7 @@
             {
                 "name": "assetName",
                 "type": "String",
-                "description": "name of the AMS CVR asset",
+                "description": "name of the AVA CVR asset",
                 "default": "lineCrossingAsset"
             },
             {
