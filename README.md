@@ -1,16 +1,27 @@
-# Azure IoT Central gateway module for Live Video Analytics
-Live Video Analytics on IoT Edge. It is used when you build and deploy an app for analyzing live video using an Azure IoT Central app template. The full tutorial showing how to modify and use this IoT Edge module code can be found at [Tutorial: Build and register the AVA Gateway Module](https://docs.microsoft.com/azure/iot-central/retail/tutorial-video-analytics-build-module).
+# Azure IoT Central gateway module for Azure Video Analyzer
+This sample demonstrates how to use Azure IoT Central to ingest AI inferencing from intelligent video cameras managed by Azure Video Analyer on the edge. The sample includes a custom Azure IoT Edge gateway module and deployment manifest to deploy all the necessary components to create intelligent camera devices.
 
-To learn how to use Live Video Analytics on IoT Edge see the full documentation at [Live Video Analytics on IoT Edge documentation](https://docs.microsoft.com/en-us/azure/media-services/live-video-analytics-edge/).
+The full documentation for IoT Central support for Azure IoT Edge devices can be found at [Connect Azure IoT Edge devices to an Azure IoT Central application](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-iot-edge)
+
+The full documentation for Azure Video Analyzer can be found at [What is Azure Video Analyzer?](https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/overview)
 
 ## Prerequisites
-To complete the steps in this tutorial, you need:
-* [Node.js](https://nodejs.org/en/download/) v13 or later
-* [Visual Studio Code](https://code.visualstudio.com/Download) with [TSLint](https://marketplace.visualstudio.com/items?itemName=ms-vscode.vscode-typescript-tslint-plugin) extension installed
+* An x86-64 or an ARM64 device running one of the [supported Linux operating systems](https://docs.microsoft.com/en-us/azure/iot-edge/support#operating-systems)
+* An Azure account that has an active subscription
+* [Create and setup Azure IoT Central](https://docs.microsoft.com/en-us/azure/iot-central/core/quick-deploy-iot-central)
+* [Create an Azure Video Analyzer account](https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/create-video-analyzer-account?tabs=portal)
+* [Install the Azure IoT Edge runtime on Debian-based Linux systems](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-edge)
+
+The following Azure Video Analyzer documentation can be used as a guide: [Deploy Azure Video Analyzer to an IoT Edge device](https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/deploy-iot-edge-device), which guides through the process of using Azure IoT Hub directly. Since Azure IoT Central uses IoT Hub at the core this documentation will callout where to insert Azure IoT Central into the flow.
+
+# Developer Notes
+This repository is open to freely copy and uses as you see fit. It is intended to provide a reference for a developer to use as a base and which can lead to a specific solution.
+
+Developer prerequisites:
+* [Node.js](https://nodejs.org/en/download/) v14 or later
+* [Visual Studio Code](https://code.visualstudio.com/Download) with [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) extension installed
 * [Docker](https://www.docker.com/products/docker-desktop) engine
-  * This project relies on Docker buildx to build multi-architecture container images. Please see the [Github multi-arch/qemu-user-static](https://github.com/multiarch/qemu-user-static) project to install the qemu-user-static support.
 * An [Azure Container Registry](https://docs.microsoft.com/azure/container-registry/) to host your versions of the modules
-* An [Azure Media Services](https://docs.microsoft.com/azure/media-services/) account.
 
 ## Clone the repository and setup project
 1. If you haven't already cloned the repository, use the following command to clone it to a suitable location on your local machine:
