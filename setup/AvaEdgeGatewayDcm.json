@@ -482,14 +482,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -518,7 +518,7 @@
                                 "displayName": {
                                     "en": "Timeout"
                                 },
-                                "name": "DiscoverOnvifCamerasRequestParams_Timeout",
+                                "name": "timeout",
                                 "schema": "integer"
                             }
                         ]
@@ -540,14 +540,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -576,64 +576,35 @@
                                 "displayName": {
                                     "en": "Camera Id"
                                 },
-                                "name": "AddCameraRequestParams_CameraId",
+                                "name": "cameraId",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
                                     "en": "Camera Name"
                                 },
-                                "name": "AddCameraRequestParams_CameraName",
+                                "name": "cameraName",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
                                     "en": "IP Address"
                                 },
-                                "name": "AddCameraRequestParams_IpAddress",
+                                "name": "ipAddress",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
                                     "en": "Onvif Username"
                                 },
-                                "name": "AddCameraRequestParams_OnvifUsername",
+                                "name": "onvifUsername",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
                                     "en": "Onvif Password"
                                 },
-                                "name": "AddCameraRequestParams_OnvifPassword",
-                                "schema": "string"
-                            }
-                        ]
-                    }
-                },
-                "response": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Command Response"
-                    },
-                    "name": "CommandResponse",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Command Response"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Status Code"
-                                },
-                                "name": "CommandResponseParams_StatusCode",
-                                "schema": "long"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Message"
-                                },
-                                "name": "CommandResponseParams_Message",
+                                "name": "onvifPassword",
                                 "schema": "string"
                             }
                         ]
@@ -662,36 +633,7 @@
                                 "displayName": {
                                     "en": "Device Id"
                                 },
-                                "name": "DeleteCameraRequestParams_CameraId",
-                                "schema": "string"
-                            }
-                        ]
-                    }
-                },
-                "response": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Command Response"
-                    },
-                    "name": "CommandResponse",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Command Response"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Status Code"
-                                },
-                                "name": "CommandResponseParams_StatusCode",
-                                "schema": "long"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Message"
-                                },
-                                "name": "CommandResponseParams_Message",
+                                "name": "cameraId",
                                 "schema": "string"
                             }
                         ]
@@ -703,36 +645,7 @@
                 "displayName": {
                     "en": "Get Cameras"
                 },
-                "name": "cmGetCameras",
-                "response": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Command Response"
-                    },
-                    "name": "CommandResponse",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Command Response"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Status Code"
-                                },
-                                "name": "CommandResponseParams_StatusCode",
-                                "schema": "long"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Message"
-                                },
-                                "name": "CommandResponseParams_Message",
-                                "schema": "string"
-                            }
-                        ]
-                    }
-                }
+                "name": "cmGetCameras"
             },
             {
                 "@type": "Command",
@@ -756,37 +669,8 @@
                                 "displayName": {
                                     "en": "Timeout"
                                 },
-                                "name": "RestartGatewayModuleRequestParams_Timeout",
+                                "name": "timeout",
                                 "schema": "integer"
-                            }
-                        ]
-                    }
-                },
-                "response": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Command Response"
-                    },
-                    "name": "CommandResponse",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Command Response"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Status Code"
-                                },
-                                "name": "CommandResponseParams_StatusCode",
-                                "schema": "long"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Message"
-                                },
-                                "name": "CommandResponseParams_Message",
-                                "schema": "string"
                             }
                         ]
                     }
@@ -797,72 +681,14 @@
                 "displayName": {
                     "en": "Clear Device Cache"
                 },
-                "name": "cmClearDeviceCache",
-                "response": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Command Response"
-                    },
-                    "name": "CommandResponse",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Command Response"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Status Code"
-                                },
-                                "name": "CommandResponseParams_StatusCode",
-                                "schema": "long"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Message"
-                                },
-                                "name": "CommandResponseParams_Message",
-                                "schema": "string"
-                            }
-                        ]
-                    }
-                }
+                "name": "cmClearDeviceCache"
             },
             {
                 "@type": "Command",
                 "displayName": {
                     "en": "Clear Pipeline Cache"
                 },
-                "name": "cmClearPipelineCache",
-                "response": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Command Response"
-                    },
-                    "name": "CommandResponse",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Command Response"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Status Code"
-                                },
-                                "name": "CommandResponseParams_StatusCode",
-                                "schema": "long"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Message"
-                                },
-                                "name": "CommandResponseParams_Message",
-                                "schema": "string"
-                            }
-                        ]
-                    }
-                }
+                "name": "cmClearPipelineCache"
             }
         ]
     }

@@ -1,4 +1,5 @@
-import { Server, Plugin } from '@hapi/hapi';
+import { HapiPlugin, inject } from 'spryly';
+import { Server } from '@hapi/hapi';
 import {
     ContainerCreateOptions,
     BlobServiceClient,
@@ -13,8 +14,9 @@ export interface IBlobStoragePluginOptions {
 }
 
 export interface IBlobStorage {
+    configureBlobStorageClient(pluginOptions: IBlobStoragePluginOptions): boolean;
     getFileFromBlobStorage(fileName: string): Promise<any>;
-    uploadBase64ImageToContainer(base64Data: string, blobName: string): Promise<string>;
+    uploadBase64ImageToBlobStorageContainer(base64Data: string, blobName: string): Promise<string>;
 }
 
 declare module '@hapi/hapi' {
@@ -23,48 +25,61 @@ declare module '@hapi/hapi' {
     }
 }
 
-const PluginModuleName = 'BlobStoragePlugin';
+const PluginName = 'BlobStoragePlugin';
 const ModuleName = 'BlobStorageModule';
 
-export const blobStoragePlugin: Plugin<any> = {
-    name: PluginModuleName,
+export class BlobStoragePlugin implements HapiPlugin {
+    @inject('$server')
+    private server: Server;
 
-    // @ts-ignore (server, options)
-    register: async (server: Server, options: IBlobStoragePluginOptions) => {
-        server.log([PluginModuleName, 'info'], 'register');
-
-        if (!options.blobConnectionString) {
-            throw new Error('Missing required option (blobConnectionString) in IBlobStoragePluginOptions');
-        }
-
-        const plugin = new BlobStorageModule(server, options);
-
-        await plugin.initialize();
-
-        server.settings.app.blobStorage = plugin;
+    public async init(): Promise<void> {
+        this.server.log([ModuleName, 'info'], `init`);
     }
-};
+
+    // @ts-ignore (options)
+    public async register(server: Server, options: any): Promise<void> {
+        server.log([PluginName, 'info'], 'register');
+
+        try {
+            server.log([PluginName, 'info'], 'register');
+
+            const plugin = new BlobStorageModule(server);
+
+            server.settings.app.blobStorage = plugin;
+        }
+        catch (ex) {
+            server.log([PluginName, 'error'], `Error while registering : ${ex.message}`);
+        }
+    }
+}
 
 class BlobStorageModule implements IBlobStorage {
     private server: Server;
     private options: IBlobStoragePluginOptions;
     private blobStorageServiceClient: BlobServiceClient;
 
-    constructor(server: Server, options: IBlobStoragePluginOptions) {
+    constructor(server: Server) {
         this.server = server;
-        this.options = options;
     }
 
-    public async initialize(): Promise<boolean> {
-        if (!this.ensureBlobServiceClient()) {
-            this.server.log([ModuleName, 'error'], `Error creating the Blob Storage Service client`);
+    public configureBlobStorageClient(pluginOptions: IBlobStoragePluginOptions): boolean {
+        this.server.log([ModuleName, 'info'], `configureBlobStorageClient`);
+
+        if (!this.ensureBlobServiceClient(pluginOptions)) {
+            this.server.log([ModuleName, 'error'], `Error creating the Blob Storage service client`);
             return;
         }
+
+        this.options = {
+            ...pluginOptions
+        };
 
         return true;
     }
 
     public async getFileFromBlobStorage(fileName: string): Promise<any> {
+        this.server.log([ModuleName, 'info'], `getFileFromBlobStorage`);
+
         if (!this.ensureBlobServiceClient()) {
             this.server.log([ModuleName, 'error'], `No Blob Storage Service client for file download`);
             return;
@@ -92,7 +107,9 @@ class BlobStorageModule implements IBlobStorage {
         return;
     }
 
-    public async uploadBase64ImageToContainer(base64Data: string, blobName: string): Promise<string> {
+    public async uploadBase64ImageToBlobStorageContainer(base64Data: string, blobName: string): Promise<string> {
+        this.server.log([ModuleName, 'info'], `uploadBase64ImageToBlobStorageContainer`);
+
         if (!this.ensureBlobServiceClient()) {
             this.server.log([ModuleName, 'error'], `No Blob Storage Service client for image upload`);
             return;
@@ -141,16 +158,16 @@ class BlobStorageModule implements IBlobStorage {
         return imageUrl;
     }
 
-    private ensureBlobServiceClient(): boolean {
+    private ensureBlobServiceClient(pluginOptions?: IBlobStoragePluginOptions): boolean {
         try {
-            if (!this.blobStorageServiceClient) {
-                this.blobStorageServiceClient = BlobServiceClient.fromConnectionString(this.options.blobConnectionString);
+            if (pluginOptions || !this.blobStorageServiceClient) {
+                this.blobStorageServiceClient = BlobServiceClient.fromConnectionString(pluginOptions.blobConnectionString);
             }
 
             return !!this.blobStorageServiceClient;
         }
         catch (ex) {
-            this.server.log([ModuleName, 'error'], `Error creating the blob storage service shared key and client: ${ex.message}`);
+            this.server.log([ModuleName, 'error'], `Error creating the Blob Storage service shared key and client: ${ex.message}`);
         }
 
         return false;

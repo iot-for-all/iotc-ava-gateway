@@ -221,14 +221,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -257,14 +257,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -293,7 +293,7 @@
                                 "displayName": {
                                     "en": "Onvif Media Profile Token"
                                 },
-                                "name": "GetOnvifRtspStreamRequestParams_MediaProfileToken",
+                                "name": "mediaProfileToken",
                                 "schema": "string"
                             }
                         ]
@@ -315,14 +315,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -351,7 +351,7 @@
                                 "displayName": {
                                     "en": "Onvif Media Profile Token"
                                 },
-                                "name": "CaptureOnvifImageRequestParams_MediaProfileToken",
+                                "name": "mediaProfileToken",
                                 "schema": "string"
                             }
                         ]
@@ -373,14 +373,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -409,14 +409,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -445,21 +445,21 @@
                                 "displayName": {
                                     "en": "AVA Topology Pipeline Name"
                                 },
-                                "name": "StartAvaPipelineRequestParams_AvaPipelineTopologyName",
+                                "name": "avaPipelineTopologyName",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
                                     "en": "AVA Live Pipeline Name"
                                 },
-                                "name": "StartAvaPipelineRequestParams_AvaLivePipelineName",
+                                "name": "avaLivePipelineName",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
                                     "en": "Onvif Media Profile Token"
                                 },
-                                "name": "StartAvaPipelineRequestParams_MediaProfileToken",
+                                "name": "mediaProfileToken",
                                 "schema": "string"
                             }
                         ]
@@ -481,14 +481,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -517,14 +517,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]
@@ -553,14 +553,14 @@
                                 "displayName": {
                                     "en": "Status Code"
                                 },
-                                "name": "CommandResponseParams_StatusCode",
+                                "name": "statusCode",
                                 "schema": "long"
                             },
                             {
                                 "displayName": {
                                     "en": "Message"
                                 },
-                                "name": "CommandResponseParams_Message",
+                                "name": "message",
                                 "schema": "string"
                             }
                         ]

@@ -18,8 +18,10 @@ ADD src ${WORKINGDIR}/src
 RUN npm install -q \
     && npm run build \
     && npm run eslint \
+    && npm prune --production \
     && rm -f .eslintrc.json \
-    && rm -f tsconfig.json
+    && rm -f tsconfig.json \
+    && rm -rf src
 
 HEALTHCHECK \
     --interval=30s \

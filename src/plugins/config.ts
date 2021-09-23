@@ -1,5 +1,5 @@
 import { HapiPlugin, inject } from 'spryly';
-import { Server, Plugin } from '@hapi/hapi';
+import { Server } from '@hapi/hapi';
 import {
     resolve as pathResolve,
     relative as pathRelative,
@@ -23,40 +23,30 @@ declare module '@hapi/hapi' {
 }
 
 const ROOT = '__ROOT__';
-const ModuleName = 'ConfigPlugin';
-
-const configPlugin: Plugin<any> = {
-    name: 'ConfigPlugin',
-
-    // @ts-ignore (server, options)
-    register: async (server: Server, options: any) => {
-        server.log([ModuleName, 'info'], 'register');
-
-        const plugin = new ConfigModule(server, options);
-
-        await plugin.initialize();
-
-        server.settings.app.config = plugin;
-    }
-};
+const PluginName = 'ConfigPlugin';
+const ModuleName = 'ConfigModule';
 
 export class ConfigPlugin implements HapiPlugin {
     @inject('$server')
     private server: Server;
 
     public async init(): Promise<void> {
-        this.server.log([ModuleName, 'info'], `init`);
+        this.server.log([PluginName, 'info'], `init`);
     }
 
     // @ts-ignore (options)
     public async register(server: Server, options: any): Promise<void> {
-        server.log([ModuleName, 'info'], 'register');
+        server.log([PluginName, 'info'], 'register');
 
         try {
-            await server.register(configPlugin);
+            const plugin = new ConfigModule(server, options);
+
+            await plugin.initialize();
+
+            server.settings.app.config = plugin;
         }
         catch (ex) {
-            server.log([ModuleName, 'error'], `Error while registering : ${ex.message}`);
+            server.log([PluginName, 'error'], `Error while registering : ${ex.message}`);
         }
     }
 }

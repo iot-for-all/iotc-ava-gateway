@@ -82,24 +82,24 @@ const defaultVideoPlaybackHost = 'http://localhost:8094';
 const defaultInferenceTimeout = 5;
 const defaultMaxVideoInferenceTime = 10;
 
-enum GetOnvifRtspStreamUrlCommandRequestParams {
-    MediaProfileToken = 'GetOnvifRtspStreamRequestParams_MediaProfileToken'
+interface IGetOnvifRtspStreamUrlCommandRequestParams {
+    mediaProfileToken: string;
 }
 
-enum CaptureOnvifImageCommandRequestParams {
-    MediaProfileToken = 'CaptureOnvifImageRequestParams_MediaProfileToken'
+interface ICaptureOnvifImageCommandRequestParams {
+    mediaProfileToken: string;
 }
 
-enum StartAvaPipelineCommandRequestParams {
-    AvaPipelineTopologyName = 'StartAvaPipelineRequestParams_AvaPipelineTopologyName',
-    AvaLivePipelineName = 'StartAvaPipelineRequestParams_AvaLivePipelineName',
-    MediaProfileToken = 'StartAvaPipelineRequestParams_MediaProfileToken'
+interface IStartAvaPipelineCommandRequestParams {
+    avaPipelineTopologyName: string;
+    avaLivePipelineName: string;
+    mediaProfileToken: string;
 }
 
-enum CommandResponseParams {
-    StatusCode = 'CommandResponseParams_StatusCode',
-    Message = 'CommandResponseParams_Message',
-    Data = 'CommandResponseParams_Data'
+interface DeviceCommandResponse {
+    statusCode: number;
+    message: string;
+    payload?: any;
 }
 
 enum AvaEdgeOperationsCapability {
@@ -441,9 +441,11 @@ export class AvaCameraDevice {
         });
     }
 
-    private async getOnvifCameraProps(): Promise<{ result: boolean; payload: IOnvifCameraInformation }> {
-        let result = true;
-        let payload: IOnvifCameraInformation;
+    private async getOnvifCameraProps(): Promise<DeviceCommandResponse> {
+        const response: DeviceCommandResponse = {
+            statusCode: 200,
+            message: `Retrieved onvif camera properties successfully`
+        };
 
         try {
             const deviceInfoResult = await this.iotCentralModule.invokeDirectMethod(
@@ -455,7 +457,7 @@ export class AvaCameraDevice {
                     Password: this.cameraInfo.onvifPassword
                 });
 
-            payload = {
+            response.payload = {
                 manufacturer: deviceInfoResult.payload?.Manufacturer || '',
                 model: deviceInfoResult.payload?.Model || '',
                 firmwareVersion: deviceInfoResult.payload?.Firmware || '',
@@ -463,30 +465,32 @@ export class AvaCameraDevice {
                 serialNumber: deviceInfoResult.payload?.SerialNumber || ''
             };
 
-            this.onvifCameraInformationInternal = payload;
+            this.onvifCameraInformationInternal = response.payload;
 
             await this.updateDeviceProperties({
-                rpManufacturer: payload.manufacturer,
-                rpModel: payload.model,
-                rpFirmwareVersion: payload.firmwareVersion,
-                rpHardwareId: payload.hardwareId,
-                rpSerialNumber: payload.serialNumber
+                rpManufacturer: response.payload.manufacturer,
+                rpModel: response.payload.model,
+                rpFirmwareVersion: response.payload.firmwareVersion,
+                rpHardwareId: response.payload.hardwareId,
+                rpSerialNumber: response.payload.serialNumber
             });
         }
         catch (ex) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `Error getting onvif device properties: ${ex.message}`);
-            result = false;
+            response.statusCode = 500;
+            response.message = `Error getting onvif device properties: ${ex.message}`;
+
+            this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
 
-        return {
-            result,
-            payload
-        };
+        return response;
     }
 
-    private async getOnvifMediaProfiles(): Promise<{ result: boolean; payload: any[] }> {
-        let result = true;
-        let mediaProfiles = [];
+    private async getOnvifMediaProfiles(): Promise<DeviceCommandResponse> {
+        const response: DeviceCommandResponse = {
+            statusCode: 200,
+            message: `Retrieved onvif media profiles successfully`,
+            payload: []
+        };
 
         try {
             const mediaProfileResult = await this.iotCentralModule.invokeDirectMethod(
@@ -498,7 +502,7 @@ export class AvaCameraDevice {
                     Password: this.cameraInfo.onvifPassword
                 });
 
-            mediaProfiles = (mediaProfileResult.payload || []).map((item) => {
+            response.payload = (mediaProfileResult.payload || []).map((item) => {
                 return {
                     mediaProfileName: item.MediaProfileName,
                     mediaProfileToken: item.MediaProfileToken
@@ -506,19 +510,20 @@ export class AvaCameraDevice {
             });
         }
         catch (ex) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `Error getting onvif device media profiles: ${ex.message}`);
-            result = false;
+            response.statusCode = 500;
+            response.message = `Error getting onvif device media profiles: ${ex.message}`;
+
+            this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
 
-        return {
-            result,
-            payload: mediaProfiles
-        };
+        return response;
     }
 
-    private async getOnvifRtspStreamUrl(mediaProfileToken: string): Promise<{ result: boolean; payload: string }> {
-        let result = true;
-        let rtspUrl = '';
+    private async getOnvifRtspStreamUrl(mediaProfileToken: string): Promise<DeviceCommandResponse> {
+        const response: DeviceCommandResponse = {
+            statusCode: 200,
+            message: `Retrieved onvif rtsp stream url successfully`
+        };
 
         try {
             const requestParams = {
@@ -533,17 +538,15 @@ export class AvaCameraDevice {
                 'GetRTSPStreamURI',
                 requestParams);
 
-            rtspUrl = serviceResponse.status === 200 ? serviceResponse.payload : '';
+            response.payload = serviceResponse.status === 200 ? serviceResponse.payload : '';
         }
         catch (ex) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `An error occurred while getting onvif stream uri from device id: ${this.cameraInfo.cameraId}`);
-            result = false;
+            response.statusCode = 500;
+            response.message = `An error occurred while getting onvif stream uri from device id: ${this.cameraInfo.cameraId}`;
+            this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
 
-        return {
-            result,
-            payload: rtspUrl
-        };
+        return response;
     }
 
     @bind
@@ -809,11 +812,13 @@ export class AvaCameraDevice {
         this.healthState = HealthState.Critical;
     }
 
-    private async captureImage(mediaProfileToken: string): Promise<{ result: boolean; payload: string }> {
+    private async captureImage(mediaProfileToken: string): Promise<DeviceCommandResponse> {
         this.server.log([this.cameraInfo.cameraId, 'info'], `captureImage`);
 
-        let result = true;
-        let blobUrl = '';
+        const response: DeviceCommandResponse = {
+            statusCode: 200,
+            message: `Image capture completed successfully`
+        };
 
         try {
             const requestParams = {
@@ -834,34 +839,38 @@ export class AvaCameraDevice {
                 this.server.log([this.cameraInfo.cameraId, 'info'], `Image capture complete, uploading image data to blob storage...`);
 
                 const blobName = `${this.appScopeId}-${this.iotCentralModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`;
-                blobUrl = await this.server.settings.app.blobStorage.uploadBase64ImageToContainer(captureImageResult.payload as string, blobName);
+                response.payload = await this.server.settings.app.blobStorage.uploadBase64ImageToBlobStorageContainer(captureImageResult.payload as string, blobName);
 
-                this.server.log([this.cameraInfo.cameraId, 'info'], `Blob store image transfer complete`);
+                response.statusCode = 200;
+                response.message = `Image capture completed successfully`;
+
+                this.server.log([this.cameraInfo.cameraId, 'info'], response.message);
             }
 
-            if (blobUrl) {
+            if (response.payload) {
                 await this.sendMeasurement({
-                    [OnvifCameraCapability.evUploadImage]: blobUrl
+                    [OnvifCameraCapability.evUploadImage]: response.payload
                 });
 
                 await this.updateDeviceProperties({
-                    [OnvifCameraCapability.rpCaptureImageUrl]: blobUrl
+                    [OnvifCameraCapability.rpCaptureImageUrl]: response.payload
                 });
             }
             else {
-                this.server.log([this.cameraInfo.cameraId, 'error'], `An error occurred while uploading the captured image to the blob storage service`);
-                result = false;
+                response.statusCode = 500;
+                response.message = `An error occurred while uploading the captured image to the blob storage service`;
+
+                this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
             }
         }
         catch (ex) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `An error occurred while attempting to capture an image on device: ${this.cameraInfo.cameraId}: ${ex.message}`);
-            result = false;
+            response.statusCode = 500;
+            response.message = `An error occurred while attempting to capture an image on device: ${this.cameraInfo.cameraId}: ${ex.message}`;
+
+            this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
 
-        return {
-            result,
-            payload: blobUrl
-        };
+        return response;
     }
 
     private async getPipelineContent(contentName: string): Promise<any> {
@@ -885,8 +894,8 @@ export class AvaCameraDevice {
     }
 
     private async initializeAvaProcessor(avaPipelineTopologyName: string, avaLivePipelineName: string, mediaProfileToken: string): Promise<boolean> {
-        const getRtspStreamUrlResult = await this.getOnvifRtspStreamUrl(mediaProfileToken);
-        if (!getRtspStreamUrlResult.result) {
+        const getRtspStreamUrlResponse = await this.getOnvifRtspStreamUrl(mediaProfileToken);
+        if (getRtspStreamUrlResponse.statusCode !== 200) {
             this.server.log([this.cameraInfo.cameraId, 'error'], `Error obtaining Onvif RTSP streaming url`);
             return false;
         }
@@ -901,7 +910,7 @@ export class AvaCameraDevice {
             return false;
         }
 
-        this.avaPipeline = new AvaPipeline(this.server, this.avaEdgeModuleId, this.cameraInfo, getRtspStreamUrlResult.payload, avaPipelineTopology, avaLivePipeline);
+        this.avaPipeline = new AvaPipeline(this.server, this.avaEdgeModuleId, this.cameraInfo, getRtspStreamUrlResponse.payload, avaPipelineTopology, avaLivePipeline);
         if (!this.avaPipeline) {
             this.server.log([this.cameraInfo.cameraId, 'error'], `Error creating AvaPipeline object: {${avaPipelineTopologyName}:${avaLivePipelineName}}`);
             return false;
@@ -1004,79 +1013,56 @@ export class AvaCameraDevice {
     private async handleDirectMethod(commandRequest: DeviceMethodRequest, commandResponse: DeviceMethodResponse) {
         this.server.log([this.cameraInfo.cameraId, 'info'], `${commandRequest.methodName} command received`);
 
-        const directMethodResponse: any = {
-            [CommandResponseParams.StatusCode]: 200,
-            [CommandResponseParams.Message]: ''
+        let response: DeviceCommandResponse = {
+            statusCode: 200,
+            message: ''
         };
 
         try {
             switch (commandRequest.methodName) {
                 case OnvifCameraCapability.cmGetOnvifCameraProps: {
-                    const getCameraPropsResult = await this.getOnvifCameraProps();
-                    if (getCameraPropsResult.result) {
-                        directMethodResponse[CommandResponseParams.Message] = `Retrieved onvif camera properties successfully`;
-                        directMethodResponse[CommandResponseParams.Data] = getCameraPropsResult.payload;
-                    }
-                    else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `An error occurred while retreiving the onvif camera properties`;
-                    }
-
+                    response = await this.getOnvifCameraProps();
                     break;
                 }
 
                 case OnvifCameraCapability.cmGetOnvifMediaProfiles: {
-                    const getOnvifMediaProfilesResult = await this.getOnvifMediaProfiles();
-                    if (getOnvifMediaProfilesResult.result) {
-                        directMethodResponse[CommandResponseParams.Message] = `Retrieved onvif media profiles successfully`;
-                        directMethodResponse[CommandResponseParams.Data] = getOnvifMediaProfilesResult.payload;
-                    }
-                    else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `An error occurred while retreiving the onvif media profiles`;
-                    }
-
+                    response = await this.getOnvifMediaProfiles();
                     break;
                 }
 
                 case OnvifCameraCapability.cmGetOnvifRtspStreamUrl: {
-                    const mediaProfileToken = commandRequest?.payload?.[GetOnvifRtspStreamUrlCommandRequestParams.MediaProfileToken];
+                    const mediaProfileToken = (commandRequest?.payload as IGetOnvifRtspStreamUrlCommandRequestParams)?.mediaProfileToken;
                     if (!mediaProfileToken) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 400;
-                        directMethodResponse[CommandResponseParams.Message] = `Missing required parameters for command ${commandRequest.methodName}`;
+                        response.statusCode = 400;
+                        response.message = `Missing required parameters for command ${commandRequest.methodName}`;
                     }
                     else {
-
-                        const getOnvifRtspStreamUrlResult = await this.getOnvifRtspStreamUrl(mediaProfileToken);
-                        if (getOnvifRtspStreamUrlResult.result) {
-                            directMethodResponse[CommandResponseParams.Message] = `Retrieved onvif rtsp stream url successfully`;
-                            directMethodResponse[CommandResponseParams.Data] = getOnvifRtspStreamUrlResult.payload;
-                        }
-                        else {
-                            directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                            directMethodResponse[CommandResponseParams.Message] = `An error occurred while retreiving the onvif rtsp stream url`;
-                        }
+                        response = await this.getOnvifRtspStreamUrl(mediaProfileToken);
                     }
 
                     break;
                 }
 
                 case OnvifCameraCapability.cmStartAvaPipeline: {
-                    const avaPipelineTopologyName = commandRequest?.payload?.[StartAvaPipelineCommandRequestParams.AvaPipelineTopologyName];
-                    const avaLivePipelineName = commandRequest?.payload?.[StartAvaPipelineCommandRequestParams.AvaLivePipelineName];
-                    const onvifMediaProfileToken = commandRequest?.payload?.[StartAvaPipelineCommandRequestParams.MediaProfileToken];
-                    if (!avaPipelineTopologyName || !avaLivePipelineName || !onvifMediaProfileToken) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 400;
-                        directMethodResponse[CommandResponseParams.Message] = `Missing required parameters for command ${commandRequest.methodName}`;
+                    const startPipelineParams = commandRequest?.payload as IStartAvaPipelineCommandRequestParams;
+                    if (!startPipelineParams.avaPipelineTopologyName
+                        || !startPipelineParams.avaLivePipelineName
+                        || !startPipelineParams.mediaProfileToken) {
+                        response.statusCode = 400;
+                        response.message = `Missing required parameters for command ${commandRequest.methodName}`;
                     }
                     else {
-                        const startAvaPipelineResult = await this.startAvaProcessing(avaPipelineTopologyName, avaLivePipelineName, onvifMediaProfileToken);
+                        const startAvaPipelineResult = await this.startAvaProcessing(
+                            startPipelineParams.avaPipelineTopologyName,
+                            startPipelineParams.avaLivePipelineName,
+                            startPipelineParams.mediaProfileToken);
                         if (startAvaPipelineResult) {
-                            directMethodResponse[CommandResponseParams.Message] = `AVA edge processing started`;
+                            response.statusCode = 200;
+                            response.message = `AVA edge processing started`;
                         }
                         else {
-                            directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                            directMethodResponse[CommandResponseParams.Message] = `AVA edge processing failed to start`;
+                            response.statusCode = 500;
+                            response.message = `AVA edge processing failed to start`;
                         }
                     }
 
@@ -1086,39 +1072,34 @@ export class AvaCameraDevice {
                 case OnvifCameraCapability.cmStopAvaPipeline: {
                     const stopAvaPipelineResult = await this.stopAvaProcessing();
                     if (stopAvaPipelineResult) {
-                        directMethodResponse[CommandResponseParams.Message] = `AVA edge processing successfully stopped`;
+                        response.statusCode = 200;
+                        response.message = `AVA edge processing stopped`;
                     }
                     else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `AVA edge processing failed to stop`;
+                        response.statusCode = 500;
+                        response.message = `AVA edge processing failed to stop`;
                     }
 
                     break;
                 }
 
                 case OnvifCameraCapability.cmCaptureOnvifImage: {
-                    const mediaProfileToken = commandRequest?.payload?.[CaptureOnvifImageCommandRequestParams.MediaProfileToken];
+                    const mediaProfileToken = (commandRequest?.payload as ICaptureOnvifImageCommandRequestParams)?.mediaProfileToken;
                     if (!mediaProfileToken) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 400;
-                        directMethodResponse[CommandResponseParams.Message] = `Missing required parameters for command ${commandRequest.methodName}`;
+                        response.statusCode = 400;
+                        response.message = `Missing required parameters for command ${commandRequest.methodName}`;
                     }
                     else {
-                        const captureImageResult = await this.captureImage(mediaProfileToken);
-                        if (captureImageResult.result) {
-                            directMethodResponse[CommandResponseParams.Message] = `Image capture completed successfully`;
-                            directMethodResponse[CommandResponseParams.Data] = captureImageResult.payload;
-                        }
-                        else {
-                            directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                            directMethodResponse[CommandResponseParams.Message] = `An error occurred while capturing camera image`;
-                        }
+                        response = await this.captureImage(mediaProfileToken);
                     }
 
                     break;
                 }
 
                 case OnvifCameraCapability.cmGetAvaProcessingStatus:
-                    directMethodResponse[CommandResponseParams.Message] = this.processingState;
+                    response.statusCode = 200;
+                    response.message = this.processingState;
+                    response.payload = this.processingState;
                     break;
 
                 case OnvifCameraCapability.cmRestartOnvifCamera: {
@@ -1126,30 +1107,31 @@ export class AvaCameraDevice {
 
                     const restartCameraResult = await this.restartCamera();
                     if (restartCameraResult) {
-                        directMethodResponse[CommandResponseParams.Message] = `Camera restart command completed`;
+                        response.statusCode = 200;
+                        response.message = `Camera restart command completed`;
                     }
                     else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `An error occurred while attempting to restart the camera device`;
+                        response.statusCode = 500;
+                        response.message = `An error occurred while attempting to restart the camera device`;
                     }
 
                     break;
                 }
 
                 default:
-                    directMethodResponse[CommandResponseParams.StatusCode] = 400;
-                    directMethodResponse[CommandResponseParams.Message] = `An unknown method name was found: ${commandRequest.methodName}`;
+                    response.statusCode = 400;
+                    response.message = `An unknown method name was found: ${commandRequest.methodName}`;
             }
 
-            this.server.log([this.cameraInfo.cameraId, 'info'], directMethodResponse[CommandResponseParams.Message]);
+            this.server.log([this.cameraInfo.cameraId, 'info'], response.message);
         }
         catch (ex) {
-            directMethodResponse[CommandResponseParams.StatusCode] = 500;
-            directMethodResponse[CommandResponseParams.Message] = `An error occurred executing the command ${commandRequest.methodName}: ${ex.message}`;
+            response.statusCode = 500;
+            response.message = `An error occurred executing the command ${commandRequest.methodName}: ${ex.message}`;
 
-            this.server.log([this.cameraInfo.cameraId, 'error'], directMethodResponse[CommandResponseParams.Message]);
+            this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
 
-        await commandResponse.send(200, directMethodResponse);
+        await commandResponse.send(200, response);
     }
 }

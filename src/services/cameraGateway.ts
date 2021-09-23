@@ -2,10 +2,7 @@ import { service, inject } from 'spryly';
 import { Server } from '@hapi/hapi';
 import { HealthState } from './health';
 import { AvaPipeline } from './avaPipeline';
-import {
-    IOnlineCameraInformation,
-    AvaCameraDevice
-} from './device';
+import { AvaCameraDevice } from './device';
 import { SymmetricKeySecurityClient } from 'azure-iot-security-symmetric-key';
 import { RegistrationResult, ProvisioningDeviceClient } from 'azure-iot-provisioning-device';
 import { Mqtt as ProvisioningTransport } from 'azure-iot-provisioning-device-mqtt';
@@ -29,8 +26,7 @@ import {
 import * as crypto from 'crypto';
 import * as Wreck from '@hapi/wreck';
 import { URL } from 'url';
-import { blobStoragePlugin } from '../plugins/blobStorage';
-import { bind, emptyObj, forget } from '../utils';
+import { bind, emptyObj, forget, sleep } from '../utils';
 
 const ModuleName = 'CameraGatewayService';
 const IotcOutputName = 'iotc';
@@ -38,6 +34,7 @@ const defaultHealthCheckRetries = 3;
 const defaultDpsProvisioningHost = 'global.azure-devices-provisioning.net';
 const defaultDeviceModelId = 'dtmi:com:azuremedia:model:AvaEdgeDevice;1';
 
+const ModuleConfig = 'moduleConfig';
 const DeviceCache = 'deviceCache';
 export const PipelineCache = 'pipelines';
 
@@ -48,14 +45,14 @@ interface IEnvConfig {
     avaEdgeModuleId: string;
 }
 
-interface IAppConfig {
+interface IModuleConfig {
     appSubDomain: string;
     appBaseDomain: string;
     apiToken: string;
     deviceKey: string;
     scopeId: string;
-    dpsProvisioningHost: string;
-    deviceModelId: string;
+    dpsProvisioningHost?: string;
+    deviceModelId?: string;
 }
 
 export interface ICameraProvisionInfo {
@@ -71,6 +68,10 @@ interface ICameraOperationInfo {
     operationInfo: any;
 }
 
+enum DeviceCacheOperation {
+    Update,
+    Delete
+}
 interface IDeviceCacheInfo {
     cameraInfo: ICameraProvisionInfo;
     dpsConnectionString: string;
@@ -125,8 +126,8 @@ interface IConfigureGatewayCommandRequestParmas {
         apiToken: string;
         deviceKey: string;
         scopeId: string;
-        dpsProvisioningHost: string;
-        deviceModelId: string;
+        dpsProvisioningHost?: string;
+        deviceModelId?: string;
     };
     blobStorage: {
         blobConnectionString: string;
@@ -135,30 +136,25 @@ interface IConfigureGatewayCommandRequestParmas {
     };
 }
 
-enum DiscoverCamerasCommandRequestParams {
-    Timeout = 'DiscoverOnvifCamerasRequestParams_Timeout'
+interface IDiscoverCamerasCommandRequestParams {
+    timeout: number;
 }
 
-enum AddCameraCommandRequestParams {
-    CameraId = 'AddCameraRequestParams_CameraId',
-    CameraName = 'AddCameraRequestParams_CameraName',
-    IpAddress = 'AddCameraRequestParams_IpAddress',
-    OnvifUsername = 'AddCameraRequestParams_OnvifUsername',
-    OnvifPassword = 'AddCameraRequestParams_OnvifPassword'
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface IAddCameraCommandRequestParams extends ICameraProvisionInfo { }
+
+interface IRestartGatewayModuleCommandRequestParams {
+    timeout: number;
 }
 
-enum RestartGatewayModuleCommandRequestParams {
-    Timeout = 'RestartGatewayModuleRequestParams_Timeout'
+interface IDeleteCameraCommandRequestParams {
+    cameraId: string;
 }
 
-enum DeleteCameraCommandRequestParams {
-    CameraId = 'DeleteCameraRequestParams_CameraId'
-}
-
-enum CommandResponseParams {
-    StatusCode = 'CommandResponseParams_StatusCode',
-    Message = 'CommandResponseParams_Message',
-    Data = 'CommandResponseParams_Data'
+interface ModuleCommandResponse {
+    statusCode: number;
+    message: string;
+    payload?: any;
 }
 
 enum AvaGatewayCapability {
@@ -224,9 +220,15 @@ export class CameraGatewayService {
         [AvaGatewayCapability.wpDebugRoutedMessage]: false
     };
     private avaInferenceDeviceMap = new Map<string, AvaCameraDevice>();
-    private appConfig: IAppConfig;
-    private dpsProvisioningHost: string;
-    private deviceModelId: string;
+    private moduleConfig: IModuleConfig = {
+        appSubDomain: '',
+        appBaseDomain: '',
+        apiToken: '',
+        deviceKey: '',
+        scopeId: ''
+    };
+    private dpsProvisioningHost = process.env.dpsProvisioningHost || defaultDpsProvisioningHost;
+    private deviceModelId = process.env.deviceModelId || defaultDeviceModelId;
 
     public get envConfig(): IEnvConfig {
         return this.envConfigInternal;
@@ -396,15 +398,14 @@ export class CameraGatewayService {
     public async onModuleReady(): Promise<void> {
         this.server.log([ModuleName, 'info'], `Starting onModuleReady initializaton`);
 
-        this.appConfig = await this.server.settings.app.config.get('state', 'iotCentral');
-        this.dpsProvisioningHost = this.appConfig?.dpsProvisioningHost || process.env.dpsProvisioningHost || defaultDpsProvisioningHost;
-        this.deviceModelId = this.appConfig?.deviceModelId || process.env.deviceModelId || defaultDeviceModelId;
+        this.moduleConfig = await this.server.settings.app.config.get(ModuleConfig);
 
         this.healthCheckRetries = Number(process.env.healthCheckRetries) || defaultHealthCheckRetries;
         this.healthState = this.server.settings.app.iotCentralModule.getModuleClient() ? HealthState.Good : HealthState.Critical;
 
         const systemProperties = await this.getSystemProperties();
 
+        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmConfigureGateway, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmDiscoverOnvifCameras, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmGetCameraDevices, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmAddCameraDevice, this.handleDirectMethod);
@@ -496,10 +497,13 @@ export class CameraGatewayService {
         return this.healthState;
     }
 
-    private async configureGateway(gatewayConfiguration: IConfigureGatewayCommandRequestParmas): Promise<{ result: boolean; payload: any }> {
+    private async configureGateway(gatewayConfiguration: IConfigureGatewayCommandRequestParmas): Promise<ModuleCommandResponse> {
         this.server.log([ModuleName, 'info'], `configureGateway`);
 
-        let result = true;
+        const response: ModuleCommandResponse = {
+            statusCode: 200,
+            message: `Gateway configuration completed successfully`
+        };
 
         try {
             await this.server.settings.app.iotCentralModule.sendMeasurement({
@@ -515,38 +519,41 @@ export class CameraGatewayService {
                 || !gatewayConfiguration.blobStorage.blobPipelineContainer
                 || !gatewayConfiguration.blobStorage.blobImageCaptureContainer) {
 
-                this.server.log([ModuleName, 'error'], `Required gateway configuration parameters are missing`);
-                result = false;
+                response.statusCode = 400;
+                response.message = `Required gateway configuration parameters are missing`;
+
+                this.server.log([ModuleName, 'error'], response.message);
             }
             else {
-                this.appConfig = {
+                this.moduleConfig = {
                     ...gatewayConfiguration.iotCentral
                 };
+                this.dpsProvisioningHost = gatewayConfiguration.iotCentral?.dpsProvisioningHost || process.env.dpsProvisioningHost || defaultDpsProvisioningHost;
+                this.deviceModelId = gatewayConfiguration.iotCentral?.deviceModelId || process.env.deviceModelId || defaultDeviceModelId;
 
-                await this.server.register([
-                    {
-                        plugin: blobStoragePlugin,
-                        options: gatewayConfiguration.blobStorage
-                    }
-                ]);
+                await this.server.settings.app.config.set(ModuleConfig, gatewayConfiguration.iotCentral);
+
+                await this.server.settings.app.blobStorage.configureBlobStorageClient(gatewayConfiguration.blobStorage);
             }
         }
         catch (ex) {
-            this.server.log([ModuleName, 'error'], `An error occurred: ${ex.message}`);
-            result = false;
+            response.statusCode = 500;
+            response.message = `An error occurred while setting the gateway configuration: ${ex.message}`;
+
+            this.server.log([ModuleName, 'error'], response.message);
         }
 
-        return {
-            result,
-            payload: {}
-        };
+        return response;
     }
 
-    private async discoverCameras(scanTimeout: number): Promise<{ result: boolean; payload: any[] }> {
+    private async discoverCameras(scanTimeout: number): Promise<ModuleCommandResponse> {
         this.server.log([ModuleName, 'info'], `scanForCameras`);
 
-        let result = true;
-        let payload = [];
+        const response: ModuleCommandResponse = {
+            statusCode: 200,
+            message: `Camera discovery completed successfully`,
+            payload: []
+        };
 
         try {
             this.server.log([ModuleName, 'info'], 'Initiating Onvif camera discovery');
@@ -591,7 +598,7 @@ export class CameraGatewayService {
 
 
             if (scanForCamerasResult.status >= 200 && scanForCamerasResult.status < 300) {
-                payload = (scanForCamerasResult.payload as any[] || []).map((cameraResult) => {
+                response.payload = (scanForCamerasResult.payload as any[] || []).map((cameraResult) => {
                     return {
                         name: cameraResult?.Name || '',
                         hardware: cameraResult?.Hardware || '',
@@ -607,59 +614,37 @@ export class CameraGatewayService {
                 });
             }
             else {
-                this.server.log([ModuleName, 'error'], `An error occurred during the Onvif discover operation`);
-                result = false;
+                response.statusCode = 500;
+                response.message = `An error occurred during the Onvif discover operation`;
+
+                this.server.log([ModuleName, 'error'], response.message);
             }
         }
         catch (ex) {
-            this.server.log([ModuleName, 'error'], `An error occurred: ${ex.message}`);
-            result = false;
+            response.statusCode = 500;
+            response.message = `An error occurred during the Onvif discover operation: ${ex.message}`;
+
+            this.server.log([ModuleName, 'error'], response.message);
         }
 
-        return {
-            result,
-            payload
-        };
+        return response;
     }
 
-    public async restartModule(timeout: number, reason: string): Promise<void> {
-        this.server.log([ModuleName, 'info'], `restartModule`);
-
-        try {
-            await this.server.settings.app.iotCentralModule.sendMeasurement({
-                [AvaGatewayCapability.evModuleRestart]: reason,
-                [AvaGatewayCapability.stModuleState]: ModuleState.Inactive,
-                [AvaGatewayCapability.evModuleStopped]: 'Module restart'
-            }, IotcOutputName);
-
-            if (timeout > 0) {
-                await new Promise((resolve) => {
-                    setTimeout(() => {
-                        return resolve('');
-                    }, 1000 * timeout);
-                });
-            }
-        }
-        catch (ex) {
-            this.server.log([ModuleName, 'error'], `${ex.message}`);
-        }
-
-        // let Docker restart our container
-        this.server.log([ModuleName, 'info'], `Shutting down main process - module container will restart`);
-        process.exit(1);
-    }
-
-    public async getCameras(): Promise<{ result: boolean; payload: IOnlineCameraInformation[] }> {
+    private async getCameras(): Promise<ModuleCommandResponse> {
         this.server.log([ModuleName, 'info'], `getCameras`);
 
-        const payload: IOnlineCameraInformation[] = [];
+        const response: ModuleCommandResponse = {
+            statusCode: 200,
+            message: `Get camera list succeeded`,
+            payload: []
+        };
 
         for (const device of this.avaInferenceDeviceMap) {
             const currentDevice = device[1];
             const cameraProvisionInfo = currentDevice.cameraProvisionInfo;
             const onvifCameraInformation = currentDevice.onvifCameraInformation;
 
-            payload.push({
+            response.payload.push({
                 name: cameraProvisionInfo.cameraName,
                 id: cameraProvisionInfo.cameraId,
                 ipAddress: cameraProvisionInfo.ipAddress,
@@ -670,10 +655,30 @@ export class CameraGatewayService {
             });
         }
 
-        return {
-            result: true,
-            payload
-        };
+        return response;
+    }
+
+    private async restartModule(timeout: number, reason: string): Promise<void> {
+        this.server.log([ModuleName, 'info'], `restartModule`);
+
+        try {
+            await this.server.settings.app.iotCentralModule.sendMeasurement({
+                [AvaGatewayCapability.evModuleRestart]: reason,
+                [AvaGatewayCapability.stModuleState]: ModuleState.Inactive,
+                [AvaGatewayCapability.evModuleStopped]: 'Module restart'
+            }, IotcOutputName);
+
+            await sleep(1000 * timeout);
+        }
+        catch (ex) {
+            this.server.log([ModuleName, 'error'], `${ex.message}`);
+        }
+
+        // let Docker restart our container after 5 additional seconds to allow responses to this method to return
+        setTimeout(() => {
+            this.server.log([ModuleName, 'info'], `Shutting down main process - module container will restart`);
+            process.exit(1);
+        }, 1000 * 5);
     }
 
     private async getSystemProperties(): Promise<ISystemProperties> {
@@ -711,14 +716,14 @@ export class CameraGatewayService {
                 return deviceProvisionResult;
             }
 
-            if (!this.appConfig.appSubDomain
-                || !this.appConfig.appBaseDomain
-                || !this.appConfig.apiToken
-                || !this.appConfig.deviceKey
-                || !this.appConfig.scopeId) {
+            if (!this.moduleConfig.appSubDomain
+                || !this.moduleConfig.appBaseDomain
+                || !this.moduleConfig.apiToken
+                || !this.moduleConfig.deviceKey
+                || !this.moduleConfig.scopeId) {
 
                 deviceProvisionResult.dpsProvisionStatus = false;
-                deviceProvisionResult.dpsProvisionMessage = `Missing camera management settings (appSubDomain, appBaseDomain, apiToken, deviceKey, scopeId)`;
+                deviceProvisionResult.dpsProvisionMessage = `Missing required module configuration parameters (appSubDomain, appBaseDomain, apiToken, deviceKey, scopeId)`;
                 this.server.log([ModuleName, 'error'], deviceProvisionResult.dpsProvisionMessage);
 
                 return deviceProvisionResult;
@@ -735,10 +740,13 @@ export class CameraGatewayService {
 
                 this.server.log([ModuleName, 'info'], `Succesfully provisioned camera device with id: ${cameraInfo.cameraId}`);
 
-                await this.updateCachedDeviceInfo({
-                    cameraInfo,
-                    dpsConnectionString: deviceProvisionResult.dpsHubConnectionString
-                });
+                await this.updateCachedDeviceInfo(
+                    DeviceCacheOperation.Update,
+                    cameraInfo.cameraId,
+                    {
+                        cameraInfo,
+                        dpsConnectionString: deviceProvisionResult.dpsHubConnectionString
+                    });
             }
         }
         catch (ex) {
@@ -767,12 +775,12 @@ export class CameraGatewayService {
             let dpsConnectionString = cachedDpsConnectionString;
 
             if (!dpsConnectionString) {
-                const deviceKey = this.computeDeviceKey(cameraInfo.cameraId, this.appConfig.deviceKey);
+                const deviceKey = this.computeDeviceKey(cameraInfo.cameraId, this.moduleConfig.deviceKey);
 
                 const provisioningSecurityClient = new SymmetricKeySecurityClient(cameraInfo.cameraId, deviceKey);
                 const provisioningClient = ProvisioningDeviceClient.create(
                     this.dpsProvisioningHost,
-                    this.appConfig.scopeId,
+                    this.moduleConfig.scopeId,
                     new ProvisioningTransport(),
                     provisioningSecurityClient);
 
@@ -802,7 +810,7 @@ export class CameraGatewayService {
                 this.server,
                 this.envConfig.onvifModuleId,
                 this.envConfig.avaEdgeModuleId,
-                this.appConfig.scopeId,
+                this.moduleConfig.scopeId,
                 cameraInfo
             );
 
@@ -823,10 +831,13 @@ export class CameraGatewayService {
         return deviceProvisionResult;
     }
 
-    private async deprovisionAvaInferenceDevice(cameraId: string): Promise<boolean> {
+    private async deprovisionAvaInferenceDevice(cameraId: string): Promise<ModuleCommandResponse> {
         this.server.log([ModuleName, 'info'], `Deprovisioning device - id: ${cameraId}`);
 
-        let result = false;
+        const response: ModuleCommandResponse = {
+            statusCode: 200,
+            message: `Finished deprovisioning camera device ${cameraId}`
+        };
 
         try {
             const avaInferenceDevice = this.avaInferenceDeviceMap.get(cameraId);
@@ -835,16 +846,16 @@ export class CameraGatewayService {
                 this.avaInferenceDeviceMap.delete(cameraId);
             }
 
-            await this.deleteCachedDeviceInfo(cameraId);
+            await this.updateCachedDeviceInfo(DeviceCacheOperation.Delete, cameraId);
 
             this.server.log([ModuleName, 'info'], `Deleting IoT Central device instance: ${cameraId}`);
             try {
                 await this.iotcApiRequest(
-                    `https://${this.appConfig.appSubDomain}.${this.appConfig.appBaseDomain}/api/preview/devices/${cameraId}`,
+                    `https://${this.moduleConfig.appSubDomain}.${this.moduleConfig.appBaseDomain}/api/preview/devices/${cameraId}`,
                     'delete',
                     {
                         headers: {
-                            Authorization: this.appConfig.apiToken
+                            Authorization: this.moduleConfig.apiToken
                         },
                         json: true
                     });
@@ -854,18 +865,22 @@ export class CameraGatewayService {
                 }, IotcOutputName);
 
                 this.server.log([ModuleName, 'info'], `Succesfully de-provisioned camera device with id: ${cameraId}`);
-
-                result = true;
             }
             catch (ex) {
-                this.server.log([ModuleName, 'error'], `Requeset to delete the IoT Central device failed: ${ex.message}`);
+                response.statusCode = 500;
+                response.message = `Request to delete the IoT Central device failed: ${ex.message}`;
+
+                this.server.log([ModuleName, 'error'], response.message);
             }
         }
         catch (ex) {
-            this.server.log([ModuleName, 'error'], `Failed de-provision device: ${ex.message}`);
+            response.statusCode = 500;
+            response.message = `Failed to de-provision device: ${ex.message}`;
+
+            this.server.log([ModuleName, 'error'], response.message);
         }
 
-        return result;
+        return response;
     }
 
     private computeDeviceKey(deviceId: string, masterKey: string) {
@@ -873,7 +888,7 @@ export class CameraGatewayService {
     }
 
     private async recreateCachedDevices() {
-        this.server.log([ModuleName, 'info'], 'recreateExistingDevices');
+        this.server.log([ModuleName, 'info'], 'Recreate devices using cached device information');
 
         try {
             const deviceCache = await this.server.settings.app.config.get(DeviceCache);
@@ -885,11 +900,32 @@ export class CameraGatewayService {
             }
 
             for (const cachedDevice of cachedDeviceList) {
+                let retryProvisioning = false;
+
                 try {
-                    await this.createAvaInferenceDevice(cachedDevice.cameraInfo, cachedDevice.dpsConnectionString);
+                    const provisionResult = await this.createAvaInferenceDevice(cachedDevice.cameraInfo, cachedDevice.dpsConnectionString);
+                    if (!provisionResult.dpsProvisionStatus || !provisionResult.clientConnectionStatus) {
+                        this.server.log([ModuleName, 'warning'], `An error occurred while recreating the device using cached device information: ${cachedDevice.cameraInfo.cameraId}`);
+
+                        retryProvisioning = true;
+                    }
                 }
                 catch (ex) {
-                    this.server.log([ModuleName, 'error'], `An error occurred while re-creating devices: ${ex.message}`);
+                    this.server.log([ModuleName, 'error'], `An error occurred while re-creating the device: ${cachedDevice.cameraInfo.cameraId} - ${ex.message}`);
+                    retryProvisioning = true;
+                }
+
+                if (retryProvisioning) {
+                    try {
+                        const provisionResult = await this.createAvaInferenceDevice(cachedDevice.cameraInfo);
+                        if (!provisionResult.dpsProvisionStatus || !provisionResult.clientConnectionStatus) {
+                            this.server.log([ModuleName, 'warning'], `An error occurred while recreating the device: ${cachedDevice.cameraInfo.cameraId}`);
+                        }
+                    }
+                    catch (ex) {
+                        this.server.log([ModuleName, 'error'], `An error occurred while re-creating the device: ${cachedDevice.cameraInfo.cameraId} - ${ex.message}`);
+                        retryProvisioning = true;
+                    }
                 }
             }
         }
@@ -902,16 +938,29 @@ export class CameraGatewayService {
         // state to critical here to restart the gateway module.
     }
 
-    private async updateCachedDeviceInfo(cacheProvisionInfo: IDeviceCacheInfo): Promise<void> {
+    private async updateCachedDeviceInfo(operation: DeviceCacheOperation, cameraId: string, cacheProvisionInfo?: IDeviceCacheInfo): Promise<void> {
         try {
-            const { cachedDeviceList, cachedDeviceIndex } = await this.getCachedDeviceList(cacheProvisionInfo.cameraInfo.cameraId);
-            if (cachedDeviceIndex === -1) {
-                cachedDeviceList.push(cacheProvisionInfo);
-            }
-            else {
-                cachedDeviceList[cachedDeviceIndex] = {
-                    ...cacheProvisionInfo
-                };
+            const deviceCache = await this.server.settings.app.config.get(DeviceCache);
+            const cachedDeviceList: IDeviceCacheInfo[] = deviceCache.cache || [];
+            const cachedDeviceIndex = cachedDeviceList.findIndex((element) => element.cameraInfo.cameraId === cameraId);
+
+            switch (operation) {
+                case DeviceCacheOperation.Update:
+                    if (cachedDeviceIndex === -1) {
+                        cachedDeviceList.push(cacheProvisionInfo);
+                    }
+                    else {
+                        cachedDeviceList[cachedDeviceIndex] = {
+                            ...cacheProvisionInfo
+                        };
+                    }
+                    break;
+
+                case DeviceCacheOperation.Delete:
+                    if (cachedDeviceIndex > -1) {
+                        cachedDeviceList.splice(cachedDeviceIndex, 1);
+                    }
+                    break;
             }
 
             await this.server.settings.app.config.set(DeviceCache, {
@@ -920,42 +969,6 @@ export class CameraGatewayService {
         }
         catch (ex) {
             this.server.log([ModuleName, 'error'], `Error while updating cached device info (udpate): ${ex.message}`);
-        }
-    }
-
-    private async deleteCachedDeviceInfo(cameraId: string): Promise<void> {
-        try {
-            const { cachedDeviceList, cachedDeviceIndex } = await this.getCachedDeviceList(cameraId);
-            if (cachedDeviceIndex > -1) {
-                cachedDeviceList.splice(cachedDeviceIndex, 1);
-            }
-
-            await this.server.settings.app.config.set(DeviceCache, {
-                cache: cachedDeviceList
-            });
-        }
-        catch (ex) {
-            this.server.log([ModuleName, 'error'], `Error while updating cached device info (delete): ${ex.message}`);
-        }
-    }
-
-    private async getCachedDeviceList(cameraId: string): Promise<{ cachedDeviceList: IDeviceCacheInfo[]; cachedDeviceIndex: number }> {
-        try {
-            const deviceCache = await this.server.settings.app.config.get(DeviceCache);
-            const cachedDeviceList: IDeviceCacheInfo[] = deviceCache.cache || [];
-
-            const cachedDeviceIndex = cachedDeviceList.findIndex((element) => element.cameraInfo.cameraId === cameraId);
-            if (cachedDeviceIndex > -1) {
-                cachedDeviceList.splice(cachedDeviceIndex, 1);
-            }
-
-            return {
-                cachedDeviceList,
-                cachedDeviceIndex
-            };
-        }
-        catch (ex) {
-            this.server.log([ModuleName, 'error'], `Error while retrieving cached device list: ${ex.message}`);
         }
     }
 
@@ -1022,149 +1035,104 @@ export class CameraGatewayService {
     private async handleDirectMethod(commandRequest: DeviceMethodRequest, commandResponse: DeviceMethodResponse) {
         this.server.log([ModuleName, 'info'], `${commandRequest.methodName} command received`);
 
-        const directMethodResponse: any = {
-            [CommandResponseParams.StatusCode]: 200,
-            [CommandResponseParams.Message]: ''
+        let response: ModuleCommandResponse = {
+            statusCode: 200,
+            message: ''
         };
 
         try {
             switch (commandRequest.methodName) {
                 case AvaGatewayCapability.cmConfigureGateway: {
-                    const configureGatewayResult = await this.configureGateway(commandRequest?.payload);
-                    if (configureGatewayResult.result) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                        directMethodResponse[CommandResponseParams.Message] = `Gateway configuration completed successfully`;
-                        directMethodResponse[CommandResponseParams.Data] = configureGatewayResult.payload;
-                    }
-                    else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `An error occurred during the configure gateway operation`;
-                    }
-
+                    response = await this.configureGateway(commandRequest?.payload);
                     break;
                 }
 
                 case AvaGatewayCapability.cmDiscoverOnvifCameras: {
-                    const discoverCamerasResult = await this.discoverCameras(commandRequest?.payload?.[DiscoverCamerasCommandRequestParams.Timeout] || 0);
-                    if (discoverCamerasResult.result) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                        directMethodResponse[CommandResponseParams.Message] = `Camera discovery completed successfully`;
-                        directMethodResponse[CommandResponseParams.Data] = discoverCamerasResult.payload;
-                    }
-                    else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `An error occurred during the discover cameras operation`;
-                    }
-
+                    response = await this.discoverCameras((commandRequest?.payload as IDiscoverCamerasCommandRequestParams)?.timeout || 0);
                     break;
                 }
 
                 case AvaGatewayCapability.cmGetCameraDevices: {
-                    const getCamerasResult = await this.getCameras();
-                    if (getCamerasResult.result) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                        directMethodResponse[CommandResponseParams.Message] = `Getting camera list succeeded`;
-                        directMethodResponse[CommandResponseParams.Data] = getCamerasResult.payload;
-                    }
-                    else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `An error occurred while getting the camera list`;
-                    }
-
+                    response = await this.getCameras();
                     break;
                 }
 
                 case AvaGatewayCapability.cmAddCameraDevice: {
-                    const cameraInfo: ICameraProvisionInfo = {
-                        cameraId: commandRequest?.payload?.[AddCameraCommandRequestParams.CameraId],
-                        cameraName: commandRequest?.payload?.[AddCameraCommandRequestParams.CameraName],
-                        ipAddress: commandRequest?.payload?.[AddCameraCommandRequestParams.IpAddress],
-                        onvifUsername: commandRequest?.payload?.[AddCameraCommandRequestParams.OnvifUsername],
-                        onvifPassword: commandRequest?.payload?.[AddCameraCommandRequestParams.OnvifPassword]
-                    };
-
+                    const cameraInfo = commandRequest?.payload as IAddCameraCommandRequestParams;
                     if (!cameraInfo.cameraId
                         || !cameraInfo.cameraName
                         || !cameraInfo.ipAddress
                         || !cameraInfo.onvifUsername
                         || !cameraInfo.onvifPassword) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 400;
-                        directMethodResponse[CommandResponseParams.Message] = `Missing required parameters`;
+                        response.statusCode = 400;
+                        response.message = `Missing required parameters`;
                     }
                     else {
                         const provisionResult = await this.createAvaInferenceDevice(cameraInfo);
 
-                        directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                        directMethodResponse[CommandResponseParams.Message] = provisionResult.clientConnectionMessage || provisionResult.dpsProvisionMessage;
+                        response.statusCode = 200;
+                        response.message = provisionResult.clientConnectionMessage || provisionResult.dpsProvisionMessage;
                     }
 
                     break;
                 }
 
                 case AvaGatewayCapability.cmDeleteCameraDevice: {
-                    const cameraId = commandRequest?.payload?.[DeleteCameraCommandRequestParams.CameraId];
+                    const cameraId = (commandRequest?.payload as IDeleteCameraCommandRequestParams)?.cameraId;
                     if (!cameraId) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 400;
-                        directMethodResponse[CommandResponseParams.Message] = `Missing required Camera Id parameter`;
+                        response.statusCode = 400;
+                        response.message = `Missing required Camera Id parameter`;
                     }
                     else {
-                        const deleteResult = await this.deprovisionAvaInferenceDevice(cameraId);
-                        if (deleteResult) {
-                            directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                            directMethodResponse[CommandResponseParams.Message] = `Finished deprovisioning camera device ${cameraId}`;
-                        }
-                        else {
-                            directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                            directMethodResponse[CommandResponseParams.Message] = `Error deprovisioning camera device ${cameraId}`;
-                        }
+                        response = await this.deprovisionAvaInferenceDevice(cameraId);
                     }
 
                     break;
                 }
 
                 case AvaGatewayCapability.cmRestartGatewayModule:
-                    await this.restartModule(commandRequest?.payload?.[RestartGatewayModuleCommandRequestParams.Timeout] || 0, 'RestartModule command received');
+                    await this.restartModule((commandRequest?.payload as IRestartGatewayModuleCommandRequestParams)?.timeout || 0, 'RestartModule command received');
 
-                    directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                    directMethodResponse[directMethodResponse.Message] = 'Restart module request received';
+                    response.statusCode = 200;
+                    response.message = 'Restart module request received';
                     break;
 
                 case AvaGatewayCapability.cmClearDeviceCache:
                     await this.server.settings.app.config.set(DeviceCache, {});
 
-                    directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                    directMethodResponse[CommandResponseParams.Message] = `The device cache was cleared`;
+                    response.statusCode = 200;
+                    response.message = `The device cache was cleared`;
                     break;
 
                 case AvaGatewayCapability.cmClearPipelineCache: {
                     const clearResult = await this.server.settings.app.config.clear(PipelineCache);
                     if (clearResult) {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 200;
-                        directMethodResponse[CommandResponseParams.Message] = `The pipeline cache was cleared`;
+                        response.statusCode = 200;
+                        response.message = `The pipeline cache was cleared`;
                     }
                     else {
-                        directMethodResponse[CommandResponseParams.StatusCode] = 500;
-                        directMethodResponse[CommandResponseParams.Message] = `An error occured while attempting to clear the pipeline cache`;
+                        response.statusCode = 500;
+                        response.message = `An error occured while attempting to clear the pipeline cache`;
                     }
 
                     break;
                 }
 
                 default:
-                    directMethodResponse[CommandResponseParams.StatusCode] = 400;
-                    directMethodResponse[CommandResponseParams.Message] = `An unknown method name was found: ${commandRequest.methodName}`;
+                    response.statusCode = 400;
+                    response.message = `An unknown method name was found: ${commandRequest.methodName}`;
             }
 
-            this.server.log([ModuleName, 'info'], directMethodResponse[CommandResponseParams.Message]);
+            this.server.log([ModuleName, 'info'], response.message);
         }
         catch (ex) {
-            directMethodResponse[CommandResponseParams.StatusCode] = 500;
-            directMethodResponse[CommandResponseParams.Message] = `An error occurred executing the command ${commandRequest.methodName}: ${ex.message}`;
+            response.statusCode = 500;
+            response.message = `An error occurred executing the command ${commandRequest.methodName}: ${ex.message}`;
 
-            this.server.log([ModuleName, 'error'], directMethodResponse[CommandResponseParams.Message]);
+            this.server.log([ModuleName, 'error'], response.message);
         }
 
-        await commandResponse.send(200, directMethodResponse);
+        await commandResponse.send(200, response);
     }
 
     private async iotcApiRequest(uri, method, options): Promise<any> {

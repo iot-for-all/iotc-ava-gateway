@@ -30,6 +30,4 @@ HEALTHCHECK \
     --retries=3 \
     CMD curl -f http://localhost:9070/health || exit 1
 
-EXPOSE 9070
-
 CMD ["node", "./dist/index"]
