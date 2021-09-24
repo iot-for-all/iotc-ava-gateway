@@ -420,9 +420,16 @@
                                         },
                                         {
                                             "displayName": {
-                                                "en": "deviceModelId"
+                                                "en": "avaEdgeCameraModelId"
                                             },
-                                            "name": "deviceModelId",
+                                            "name": "avaEdgeCameraModelId",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "avaEdgeOnvifCameraModelId"
+                                            },
+                                            "name": "avaEdgeOnvifCameraModelId",
                                             "schema": "string"
                                         }
                                     ]
@@ -557,6 +564,63 @@
             {
                 "@type": "Command",
                 "displayName": {
+                    "en": "Add Onvif Camera"
+                },
+                "name": "cmAddOnvifCamera",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Add Onvif Camera Request"
+                    },
+                    "name": "AddOnvifCameraRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Add Onvif Camera Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Camera Id"
+                                },
+                                "name": "cameraId",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Camera Name"
+                                },
+                                "name": "cameraName",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "IP Address"
+                                },
+                                "name": "ipAddress",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Onvif Username"
+                                },
+                                "name": "onvifUsername",
+                                "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Onvif Password"
+                                },
+                                "name": "onvifPassword",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
                     "en": "Add Camera"
                 },
                 "name": "cmAddCamera",
@@ -595,16 +659,16 @@
                             },
                             {
                                 "displayName": {
-                                    "en": "Onvif Username"
+                                    "en": "Camera Username"
                                 },
-                                "name": "onvifUsername",
+                                "name": "cameraUsername",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
-                                    "en": "Onvif Password"
+                                    "en": "Camera Password"
                                 },
-                                "name": "onvifPassword",
+                                "name": "cameraPassword",
                                 "schema": "string"
                             }
                         ]

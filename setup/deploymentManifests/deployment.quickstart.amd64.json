@@ -2,7 +2,7 @@
     "modulesContent": {
         "$edgeAgent": {
             "properties.desired": {
-                "schemaVersion": "1.1",
+                "schemaVersion": "1.0",
                 "runtime": {
                     "type": "docker",
                     "settings": {
@@ -21,7 +21,7 @@
                     "edgeAgent": {
                         "type": "docker",
                         "settings": {
-                            "image": "mcr.microsoft.com/azureiotedge-agent:1.2"
+                            "image": "mcr.microsoft.com/azureiotedge-agent:1.1"
                         }
                     },
                     "edgeHub": {
@@ -29,7 +29,7 @@
                         "status": "running",
                         "restartPolicy": "always",
                         "settings": {
-                            "image": "mcr.microsoft.com/azureiotedge-hub:1.2",
+                            "image": "mcr.microsoft.com/azureiotedge-hub:1.1",
                             "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"5671/tcp\":[{\"HostPort\":\"5671\"}],\"8883/tcp\":[{\"HostPort\":\"8883\"}],\"443/tcp\":[{\"HostPort\":\"443\"}]}}}"
                         },
                         "startupOrder": 0
@@ -53,23 +53,34 @@
                                 "value": "dtmi:com:azuremedia:model:AvaEdgeCameraDevice;1"
                             },
                             "avaEdgeOnvifCameraModelId": {
-                                "value": "dtmi:com:azuremedia:model:AvaEdgeOnvifCameraDevice;1"
+                                "value": "dtmi:com:azuremedia:model:AvaEdgeOnvifDevice;1"
                             }
                         },
                         "status": "running",
                         "restartPolicy": "always",
+                        "startupOrder": 4,
                         "version": "1.0"
                     },
-                    "OnvifModule": {
+                    "avaYolov3": {
                         "settings": {
-                            "image": "mcr.microsoft.com/cameraplatform/ipcamedgemodule",
-                            "createOptions": "{\"HostConfig\":{\"NetworkMode\":\"host\"},\"NetworkingConfig\":{\"EndpointsConfig\":{\"host\":{}}}}"
+                            "image": "mcr.microsoft.com/lva-utilities/yolov3-onnx:1.0"
                         },
                         "type": "docker",
                         "status": "running",
                         "restartPolicy": "always",
                         "version": "1.0",
                         "startupOrder": 1
+                    },
+                    "rtspsim": {
+                        "settings": {
+                            "image": "mcr.microsoft.com/ava-utilities/rtspsim-live555:1.2",
+                            "createOptions": "{\"HostConfig\":{\"Binds\":[\"/home/localedgeuser/samples/input:/live/mediaServer/media\"]}}"
+                        },
+                        "type": "docker",
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "version": "1.0",
+                        "startupOrder": 2
                     },
                     "avaEdge": {
                         "settings": {
@@ -85,69 +96,14 @@
                         "status": "running",
                         "restartPolicy": "always",
                         "version": "1.0",
-                        "startupOrder": 2
-                    },
-                    "spatialanalysis": {
-                        "version": "1.0",
-                        "type": "docker",
-                        "status": "running",
-                        "restartPolicy": "always",
-                        "startupOrder": 3,
-                        "settings": {
-                            "image": "<MCR_PATH>",
-                            "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"50051/tcp\":[{\"HostPort\":\"50051\"}]},\"IpcMode\":\"host\",\"Binds\":[\"/tmp/.X11-unix:/tmp/.X11-unix\"],\"Runtime\":\"nvidia\",\"ShmSize\":536870912,\"LogConfig\":{\"Type\":\"json-file\",\"Config\":{\"max-size\":\"10m\",\"max-file\":\"200\"}}}}"
-                        },
-                        "env": {
-                            "DISPLAY": {
-                                "value": ":0"
-                            },
-                            "ARCHON_SHARED_BUFFER_LIMIT": {
-                                "value": "377487360"
-                            },
-                            "ARCHON_LOG_LEVEL": {
-                                "value": "info"
-                            },
-                            "QT_X11_NO_MITSHM": {
-                                "value": "1"
-                            },
-                            "OMP_WAIT_POLICY": {
-                                "value": "PASSIVE"
-                            },
-                            "EULA": {
-                                "value": "accept"
-                            },
-                            "ARCHON_TELEMETRY_IOTHUB": {
-                                "value": "true"
-                            },
-                            "BILLING": {
-                                "value": "<BILLING_ENDPOINT>"
-                            },
-                            "APIKEY": {
-                                "value": "<BILLING_APIKEY>"
-                            },
-                            "LAUNCHER_TYPE": {
-                                "value": "avaBackend"
-                            },
-                            "ARCHON_GRAPH_READY_TIMEOUT": {
-                                "value": "600"
-                            },
-                            "ORT_TENSORRT_ENGINE_CACHE_ENABLE": {
-                                "value": "1"
-                            },
-                            "ORT_TENSORRT_ENGINE_CACHE_PATH": {
-                                "value": "/data"
-                            },
-                            "ORT_TENSORRT_ENGINE_DECRYPTION_ENABLE": {
-                                "value": "0"
-                            }
-                        }
+                        "startupOrder": 3
                     }
                 }
             }
         },
         "$edgeHub": {
             "properties.desired": {
-                "schemaVersion": "1.2",
+                "schemaVersion": "1.0",
                 "routes": {
                     "AvaSignalGateTrigger": "FROM /messages/modules/AvaEdgeGatewayModule/outputs/avaTrigger INTO BrokeredEndpoint(\"/modules/avaEdge/inputs/avaTrigger\")",
                     "AvaDiagnosticsForwarder": "FROM /messages/modules/avaEdge/outputs/AvaDiagnostics INTO BrokeredEndpoint(\"/modules/AvaEdgeGatewayModule/inputs/avaDiagnostics\")",

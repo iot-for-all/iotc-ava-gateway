@@ -58,7 +58,6 @@ function start() {
         const configDirDst = path.resolve(workspaceRootFolder, `configs`);
 
         createDevConfigurationFile(path.resolve(setupDirSrc, `imageConfig.json`), configDirDst, path.resolve(configDirDst, `imageConfig.json`));
-        createDevConfigurationFile(path.resolve(setupDirSrc, `state.json`), configDirDst, path.resolve(configDirDst, `state.json`));
         createDevConfigurationFolder(path.resolve(setupDirSrc, `mediaPipelines`), path.resolve(configDirDst, `mediaPipelines`));
         createDevConfigurationFolder(path.resolve(setupDirSrc, `deploymentManifests`), path.resolve(configDirDst, `deploymentManifests`));
     } catch (e) {

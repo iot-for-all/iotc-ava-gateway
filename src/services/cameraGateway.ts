@@ -27,12 +27,14 @@ import * as crypto from 'crypto';
 import * as Wreck from '@hapi/wreck';
 import { URL } from 'url';
 import { bind, emptyObj, forget, sleep } from '../utils';
+import { IBlobStoragePluginOptions } from 'src/plugins/blobStorage';
 
 const ModuleName = 'CameraGatewayService';
 const IotcOutputName = 'iotc';
 const defaultHealthCheckRetries = 3;
 const defaultDpsProvisioningHost = 'global.azure-devices-provisioning.net';
-const defaultDeviceModelId = 'dtmi:com:azuremedia:model:AvaEdgeDevice;1';
+const defaultAvaEdgeCameraModelId = 'dtmi:com:azuremedia:model:AvaEdgeCameraDevice;1';
+const defaultAvaEdgeOnvifCameraModelId = 'dtmi:com:azuremedia:model:AvaEdgeOnvifCameraDevice;1';
 
 const ModuleConfig = 'moduleConfig';
 const DeviceCache = 'deviceCache';
@@ -52,7 +54,8 @@ interface IModuleConfig {
     deviceKey: string;
     scopeId: string;
     dpsProvisioningHost?: string;
-    deviceModelId?: string;
+    avaEdgeCameraModelId?: string;
+    avaEdgeOnvifCameraModelId?: string;
 }
 
 export interface ICameraProvisionInfo {
@@ -120,28 +123,13 @@ enum ModuleState {
 }
 
 interface IConfigureGatewayCommandRequestParmas {
-    iotCentral: {
-        appSubDomain: string;
-        appBaseDomain: string;
-        apiToken: string;
-        deviceKey: string;
-        scopeId: string;
-        dpsProvisioningHost?: string;
-        deviceModelId?: string;
-    };
-    blobStorage: {
-        blobConnectionString: string;
-        blobPipelineContainer: string;
-        blobImageCaptureContainer: string;
-    };
+    iotCentral: IModuleConfig;
+    blobStorage: IBlobStoragePluginOptions;
 }
 
 interface IDiscoverCamerasCommandRequestParams {
     timeout: number;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface IAddCameraCommandRequestParams extends ICameraProvisionInfo { }
 
 interface IRestartGatewayModuleCommandRequestParams {
     timeout: number;
@@ -175,6 +163,7 @@ enum AvaGatewayCapability {
     wpDebugRoutedMessage = 'wpDebugRoutedMessage',
     cmConfigureGateway = 'cmConfigureGateway',
     cmDiscoverOnvifCameras = 'cmDiscoverOnvifCameras',
+    cmAddOnvifCameraDevice = 'cmAddOnvifCamera',
     cmAddCameraDevice = 'cmAddCamera',
     cmDeleteCameraDevice = 'cmDeleteCamera',
     cmGetCameraDevices = 'cmGetCameras',
@@ -196,6 +185,7 @@ const AvaGatewayEdgeInputs = {
 };
 
 const AvaGatewayCommands = {
+    CreateOnvifCamera: 'createonvifcamera',
     CreateCamera: 'createcamera',
     DeleteCamera: 'deletecamera',
     SendDeviceTelemetry: 'senddevicetelemetry',
@@ -228,7 +218,8 @@ export class CameraGatewayService {
         scopeId: ''
     };
     private dpsProvisioningHost = process.env.dpsProvisioningHost || defaultDpsProvisioningHost;
-    private deviceModelId = process.env.deviceModelId || defaultDeviceModelId;
+    private avaEdgeCameraModelId = process.env.avaEdgeCameraModelId || defaultAvaEdgeCameraModelId;
+    private avaEdgeOnvifCameraModelId = process.env.avaEdgeOnvifCameraModelId || defaultAvaEdgeOnvifCameraModelId;
 
     public get envConfig(): IEnvConfig {
         return this.envConfigInternal;
@@ -408,6 +399,7 @@ export class CameraGatewayService {
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmConfigureGateway, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmDiscoverOnvifCameras, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmGetCameraDevices, this.handleDirectMethod);
+        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmAddOnvifCameraDevice, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmAddCameraDevice, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmDeleteCameraDevice, this.handleDirectMethod);
         this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmRestartGatewayModule, this.handleDirectMethod);
@@ -529,7 +521,8 @@ export class CameraGatewayService {
                     ...gatewayConfiguration.iotCentral
                 };
                 this.dpsProvisioningHost = gatewayConfiguration.iotCentral?.dpsProvisioningHost || process.env.dpsProvisioningHost || defaultDpsProvisioningHost;
-                this.deviceModelId = gatewayConfiguration.iotCentral?.deviceModelId || process.env.deviceModelId || defaultDeviceModelId;
+                this.avaEdgeCameraModelId = gatewayConfiguration.iotCentral?.avaEdgeCameraModelId || process.env.avaEdgeCameraModelId || defaultAvaEdgeCameraModelId;
+                this.avaEdgeOnvifCameraModelId = gatewayConfiguration.iotCentral?.avaEdgeOnvifCameraModelId || process.env.avaEdgeOnvifCameraModelId || defaultAvaEdgeOnvifCameraModelId;
 
                 await this.server.settings.app.config.set(ModuleConfig, gatewayConfiguration.iotCentral);
 
@@ -785,7 +778,7 @@ export class CameraGatewayService {
                     provisioningSecurityClient);
 
                 const provisioningPayload = {
-                    iotcModelId: this.deviceModelId,
+                    iotcModelId: xxxx.this.avaEdgeOnvifCameraModelId,
                     iotcGateway: {
                         iotcGatewayId: this.server.settings.app.iotCentralModule.deviceId,
                         iotcModuleId: this.server.settings.app.iotCentralModule.moduleId
@@ -1058,7 +1051,7 @@ export class CameraGatewayService {
                 }
 
                 case AvaGatewayCapability.cmAddCameraDevice: {
-                    const cameraInfo = commandRequest?.payload as IAddCameraCommandRequestParams;
+                    const cameraInfo = commandRequest?.payload as ICameraProvisionInfo;
                     if (!cameraInfo.cameraId
                         || !cameraInfo.cameraName
                         || !cameraInfo.ipAddress

@@ -49,8 +49,11 @@
                             "avaEdgeModuleId": {
                                 "value": "avaEdge"
                             },
-                            "deviceModelId": {
-                                "value": "dtmi:com:azuremedia:model:AvaEdgeDevice;1"
+                            "avaEdgeCameraModelId": {
+                                "value": "dtmi:com:azuremedia:model:AvaEdgeCameraDevice;1"
+                            },
+                            "avaEdgeOnvifCameraModelId": {
+                                "value": "dtmi:com:azuremedia:model:AvaEdgeOnvifCameraDevice;1"
                             }
                         },
                         "status": "running",

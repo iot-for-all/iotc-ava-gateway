@@ -52,30 +52,32 @@ enum IoTCentralClientState {
     Connected = 'connected'
 }
 
-export enum OnvifCameraCapability {
+export enum CameraCapability {
     tlSystemHeartbeat = 'tlSystemHeartbeat',
     stIoTCentralClientState = 'stIoTCentralClientState',
     stCameraProcessingState = 'stCameraProcessingState',
     rpCameraName = 'rpCameraName',
-    evUploadImage = 'evUploadImage',
     rpIpAddress = 'rpIpAddress',
-    rpOnvifUsername = 'rpOnvifUsername',
-    rpOnvifPassword = 'rpOnvifPassword',
-    rpAvaLivePipelineName = 'rpAvaLivePipelineName',
+    rpUsername = 'rpUsername',
+    rpPassword = 'rpPassword',
+    cmStartAvaPipeline = 'cmStartAvaPipeline',
+    cmStopAvaPipeline = 'cmStopAvaPipeline',
+    cmGetAvaProcessingStatus = 'cmGetAvaProcessingStatus',
+    wpVideoPlaybackHost = 'wpVideoPlaybackHost'
+}
+
+export enum OnvifCameraCapability {
+    evUploadImage = 'evUploadImage',
     rpCaptureImageUrl = 'rpCaptureImageUrl',
-    wpVideoPlaybackHost = 'wpVideoPlaybackHost',
     cmGetOnvifCameraProps = 'cmGetOnvifCameraProps',
     cmGetOnvifMediaProfiles = 'cmGetOnvifMediaProfiles',
     cmGetOnvifRtspStreamUrl = 'cmGetOnvifRtspStreamUrl',
     cmCaptureOnvifImage = 'cmCaptureOnvifImage',
     cmRestartOnvifCamera = 'cmRestartOnvifCamera',
-    cmStartAvaPipeline = 'cmStartAvaPipeline',
-    cmStopAvaPipeline = 'cmStopAvaPipeline',
-    cmGetAvaProcessingStatus = 'cmGetAvaProcessingStatus'
 }
 
 interface IOnvifCameraSettings {
-    [OnvifCameraCapability.wpVideoPlaybackHost]: string;
+    [CameraCapability.wpVideoPlaybackHost]: string;
 }
 
 const defaultVideoPlaybackHost = 'http://localhost:8094';
@@ -253,8 +255,8 @@ export class AvaCameraDevice {
                 }
 
                 await this.sendMeasurement({
-                    [OnvifCameraCapability.stIoTCentralClientState]: IoTCentralClientState.Connected,
-                    [OnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
+                    [CameraCapability.stIoTCentralClientState]: IoTCentralClientState.Connected,
+                    [CameraCapability.stCameraProcessingState]: this.avaProcessingState
                 });
             }
         }
@@ -271,7 +273,7 @@ export class AvaCameraDevice {
     @bind
     public async getHealth(): Promise<number> {
         await this.sendMeasurement({
-            [OnvifCameraCapability.tlSystemHeartbeat]: this.healthState
+            [CameraCapability.tlSystemHeartbeat]: this.healthState
         });
 
         return this.healthState;
@@ -301,7 +303,7 @@ export class AvaCameraDevice {
 
             this.avaProcessingState = CameraProcessingState.Inactive;
             await this.sendMeasurement({
-                [OnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
+                [CameraCapability.stCameraProcessingState]: this.avaProcessingState
             });
         }
         catch (ex) {
@@ -433,10 +435,10 @@ export class AvaCameraDevice {
         await this.getOnvifCameraProps();
 
         await this.updateDeviceProperties({
-            [OnvifCameraCapability.rpCameraName]: this.cameraInfo.cameraName,
-            [OnvifCameraCapability.rpIpAddress]: this.cameraInfo.ipAddress,
-            [OnvifCameraCapability.rpOnvifUsername]: this.cameraInfo.onvifUsername,
-            [OnvifCameraCapability.rpOnvifPassword]: this.cameraInfo.onvifPassword,
+            [CameraCapability.rpCameraName]: this.cameraInfo.cameraName,
+            [CameraCapability.rpIpAddress]: this.cameraInfo.ipAddress,
+            [CameraCapability.rpUsername]: this.cameraInfo.onvifUsername,
+            [CameraCapability.rpPassword]: this.cameraInfo.onvifPassword,
             [OnvifCameraCapability.rpCaptureImageUrl]: ''
         });
     }
@@ -573,7 +575,7 @@ export class AvaCameraDevice {
                     : desiredChangedSettings[setting];
 
                 switch (setting) {
-                    case OnvifCameraCapability.wpVideoPlaybackHost:
+                    case CameraCapability.wpVideoPlaybackHost:
                         patchedProperties[setting] = {
                             value: (this.onvifCameraSettings[setting] as any) = value || defaultVideoPlaybackHost,
                             ac: 200,
@@ -686,7 +688,7 @@ export class AvaCameraDevice {
 
                     await this.sendMeasurement({
                         [AiInferenceCapability.evInferenceEventVideoUrl]: this.avaPipeline.createInferenceVideoLink(
-                            this.onvifCameraSettings[OnvifCameraCapability.wpVideoPlaybackHost],
+                            this.onvifCameraSettings[CameraCapability.wpVideoPlaybackHost],
                             this.videoInferenceStartTime,
                             Math.trunc(videoInferenceDuration.asSeconds()))
                     });
@@ -702,7 +704,7 @@ export class AvaCameraDevice {
 
                     await this.sendMeasurement({
                         [AiInferenceCapability.evInferenceEventVideoUrl]: this.avaPipeline.createInferenceVideoLink(
-                            this.onvifCameraSettings[OnvifCameraCapability.wpVideoPlaybackHost],
+                            this.onvifCameraSettings[CameraCapability.wpVideoPlaybackHost],
                             this.videoInferenceStartTime,
                             Math.trunc(videoInferenceDuration.asSeconds()))
                     });
@@ -776,9 +778,9 @@ export class AvaCameraDevice {
             this.deviceClient.onDeviceMethod(OnvifCameraCapability.cmGetOnvifMediaProfiles, this.handleDirectMethod);
             this.deviceClient.onDeviceMethod(OnvifCameraCapability.cmGetOnvifRtspStreamUrl, this.handleDirectMethod);
             this.deviceClient.onDeviceMethod(OnvifCameraCapability.cmCaptureOnvifImage, this.handleDirectMethod);
-            this.deviceClient.onDeviceMethod(OnvifCameraCapability.cmStartAvaPipeline, this.handleDirectMethod);
-            this.deviceClient.onDeviceMethod(OnvifCameraCapability.cmStopAvaPipeline, this.handleDirectMethod);
-            this.deviceClient.onDeviceMethod(OnvifCameraCapability.cmGetAvaProcessingStatus, this.handleDirectMethod);
+            this.deviceClient.onDeviceMethod(CameraCapability.cmStartAvaPipeline, this.handleDirectMethod);
+            this.deviceClient.onDeviceMethod(CameraCapability.cmStopAvaPipeline, this.handleDirectMethod);
+            this.deviceClient.onDeviceMethod(CameraCapability.cmGetAvaProcessingStatus, this.handleDirectMethod);
             this.deviceClient.onDeviceMethod(OnvifCameraCapability.cmRestartOnvifCamera, this.handleDirectMethod);
 
             result.clientConnectionStatus = true;
@@ -951,7 +953,7 @@ export class AvaCameraDevice {
 
         this.avaProcessingState = startAvaPipelineResult ? CameraProcessingState.Active : CameraProcessingState.Inactive;
         await this.sendMeasurement({
-            [OnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
+            [CameraCapability.stCameraProcessingState]: this.avaProcessingState
         });
 
         return startAvaPipelineResult;
@@ -970,7 +972,7 @@ export class AvaCameraDevice {
 
         this.avaProcessingState = CameraProcessingState.Inactive;
         await this.sendMeasurement({
-            [OnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
+            [CameraCapability.stCameraProcessingState]: this.avaProcessingState
         });
 
         return stopAvaPipelineResult;
@@ -1043,7 +1045,7 @@ export class AvaCameraDevice {
                     break;
                 }
 
-                case OnvifCameraCapability.cmStartAvaPipeline: {
+                case CameraCapability.cmStartAvaPipeline: {
                     const startPipelineParams = commandRequest?.payload as IStartAvaPipelineCommandRequestParams;
                     if (!startPipelineParams.avaPipelineTopologyName
                         || !startPipelineParams.avaLivePipelineName
@@ -1069,7 +1071,7 @@ export class AvaCameraDevice {
                     break;
                 }
 
-                case OnvifCameraCapability.cmStopAvaPipeline: {
+                case CameraCapability.cmStopAvaPipeline: {
                     const stopAvaPipelineResult = await this.stopAvaProcessing();
                     if (stopAvaPipelineResult) {
                         response.statusCode = 200;
@@ -1096,7 +1098,7 @@ export class AvaCameraDevice {
                     break;
                 }
 
-                case OnvifCameraCapability.cmGetAvaProcessingStatus:
+                case CameraCapability.cmGetAvaProcessingStatus:
                     response.statusCode = 200;
                     response.message = this.processingState;
                     response.payload = this.processingState;
