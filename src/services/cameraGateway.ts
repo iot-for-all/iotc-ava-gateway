@@ -64,6 +64,7 @@ export interface ICameraProvisionInfo {
     ipAddress: string;
     onvifUsername: string;
     onvifPassword: string;
+    modelId: string;
 }
 
 interface ICameraOperationInfo {
