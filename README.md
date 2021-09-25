@@ -19,41 +19,41 @@ In order for the IoT Edge module to access the APIs necessary to provision and r
 
 #### App Subdomain
 When you create your IoT Central application, this is the name you give it.  
-<img src="./media/appsubdomain.png" width="50%" alt="App Subdomain" />
+<img src="./media/appsubdomain.png" alt="App Subdomain" />
 
 #### App Basedomain
 This is the host portion of the main app url, usually azureiotcentral.com.  
-<img src="./media/appbasedomain.png" width="50%" alt="App Basedomain" />
+<img src="./media/appbasedomain.png" alt="App Basedomain" />
 
 #### Api Token
 In your IoT Central application select Administration from the left pane, then select API tokens. You will see an option at the top of the window to create a new API token. Create a new token using the Operator role. Copy the value of the API token for use later.  
-<img src="./media/apitoken.png" width="80%" alt="API Token" />
+<img src="./media/apitoken.png" alt="API Token" />
 
 #### Device Key and Scope Id
 Select Administration from the left pane, then select Device connection. Next, select the SAS-IoT-Devices link to reveal the Shared Access Signature primary key used to create device provisioning keys. Copy the Primary key and Scope id for use later.  
-<img src="./media/deviceconnection.png" width="80%" alt="Device Connection" />
-<img src="./media/devicekeyscopeid.png" width="80%" alt="Device Key" />
+<img src="./media/deviceconnection.png" alt="Device Connection" />
+<img src="./media/devicekeyscopeid.png" alt="Device Key" />
 
 ## Import the IoT Central device capability models for the camera device and for the gateway module
 IoT Central uses capability models to describe what kind of data the devices will send (Telemetry, State, Events, and Properties) as well as what kind of commands (Direct Methods) the devices support. This gives IoT Central insight into how to support the devices and how to reason over the ingested data - e.g. rules, relationships, visualizations, and data export formats.
 
 Select Device templates from the left pane. Select the new option to create a new template:  
-<img src="./media/newiotdevicetemplate.png" width="80%" alt="New Device Template" />
+<img src="./media/newiotdevicetemplate.png" alt="New Device Template" />
 
 Next, select the IoT Device custom template option, and then select Next: Customize at the bottom of the window:  
-<img src="./media/newcustomdevicetemplate.png" width="80%" alt="Custom Device Template" />
+<img src="./media/newcustomdevicetemplate.png" alt="Custom Device Template" />
 
 Name the device template, and then select Next: Review at the bottom of the window:  
-<img src="./media/namedevicetemplate.png" width="80%" alt="Device Template Name" />
+<img src="./media/namedevicetemplate.png" alt="Device Template Name" />
 
 Select Create:  
-<img src="./media/createcustomdevicetemplate.png" width="80%" alt="Create Device Template" />
+<img src="./media/createcustomdevicetemplate.png" alt="Create Device Template" />
 
 Now select the Import a model option:  
-<img src="./media/importdevicemodel.png" width="80%" alt="Import Device Model" />
+<img src="./media/importdevicemodel.png" alt="Import Device Model" />
 
 When asked, navigate to this repository to the `./setup/AvaEdgeOnvifCameraDeviceDcm.json` file and select open. At this point the model should be displayed with all of the interfaces describing the device's capabilities:  
-<img src="./media/avaedgeonvifcameramodel.png" width="80%" alt="Onvif Camera Model" />
+<img src="./media/avaedgeonvifcameramodel.png" alt="Onvif Camera Model" />
 
 ## Prerequisites
 * An Azure account that includes an active subscription.[Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F) if you don't already have one.
