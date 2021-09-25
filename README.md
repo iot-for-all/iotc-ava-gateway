@@ -19,11 +19,11 @@ In order for the IoT Edge module to access the APIs necessary to provision and r
 
 #### App Subdomain
 When you create your IoT Central application, this is the name you give it.  
-<img src="./media/appsubdomain.png" alt="App Subdomain" />
+<img src="./media/appsubdomain.png" width="50%" alt="App Subdomain" />
 
 #### App Basedomain
 This is the host portion of the main app url, usually azureiotcentral.com.  
-<img src="./media/appbasedomain.png" alt="App Basedomain" />
+<img src="./media/appbasedomain.png" width="50%" alt="App Basedomain" />
 
 #### Api Token
 In your IoT Central application select Administration from the left pane, then select API tokens. You will see an option at the top of the window to create a new API token. Create a new token using the Operator role. Copy the value of the API token for use later.  
