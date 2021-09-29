@@ -36,30 +36,16 @@
                     }
                 },
                 "modules": {
-                    "AvaEdgeGatewayModule": {
+                    "OnvifModule": {
                         "settings": {
-                            "image": "<MCR_PATH>",
-                            "createOptions": "{\"ExposedPorts\":{\"9229/tcp\":{}},\"HostConfig\":{\"PortBindings\":{\"9229/tcp\":[{\"HostPort\":\"9229\"}]},\"Binds\":[\"/var/iotcentralgw/storage:/data/storage/\",\"/var/iotcentralgw/media:/data/media/\"]}}"
+                            "image": "mcr.microsoft.com/cameraplatform/ipcamedgemodule",
+                            "createOptions": "{\"HostConfig\":{\"NetworkMode\":\"host\"},\"NetworkingConfig\":{\"EndpointsConfig\":{\"host\":{}}}}"
                         },
                         "type": "docker",
-                        "env": {
-                            "onvifModuleId": {
-                                "value": "OnvifModule"
-                            },
-                            "avaEdgeModuleId": {
-                                "value": "avaEdge"
-                            },
-                            "avaEdgeCameraModelId": {
-                                "value": "dtmi:com:azuremedia:model:AvaEdgeCameraDevice;1"
-                            },
-                            "avaEdgeOnvifCameraModelId": {
-                                "value": "dtmi:com:azuremedia:model:AvaEdgeOnvifCameraDevice;1"
-                            }
-                        },
                         "status": "running",
                         "restartPolicy": "always",
                         "version": "1.0",
-                        "startupOrder": 4
+                        "startupOrder": 1
                     },
                     "OpenVINOModelServerEdgeAIExtensionModule": {
                         "settings": {
@@ -70,17 +56,6 @@
                         "version": "1.0",
                         "status": "running",
                         "restartPolicy": "always",
-                        "startupOrder": 1
-                    },
-                    "OnvifModule": {
-                        "settings": {
-                            "image": "mcr.microsoft.com/cameraplatform/ipcamedgemodule",
-                            "createOptions": "{\"HostConfig\":{\"NetworkMode\":\"host\"},\"NetworkingConfig\":{\"EndpointsConfig\":{\"host\":{}}}}"
-                        },
-                        "type": "docker",
-                        "status": "running",
-                        "restartPolicy": "always",
-                        "version": "1.0",
                         "startupOrder": 2
                     },
                     "avaEdge": {
@@ -98,6 +73,28 @@
                         "restartPolicy": "always",
                         "version": "1.0",
                         "startupOrder": 3
+                    },
+                    "AvaEdgeGatewayModule": {
+                        "settings": {
+                            "image": "<MCR_PATH>",
+                            "createOptions": "{\"ExposedPorts\":{\"9229/tcp\":{}},\"HostConfig\":{\"PortBindings\":{\"9229/tcp\":[{\"HostPort\":\"9229\"}]},\"Binds\":[\"/var/iotcentralgw/storage:/data/storage/\",\"/var/iotcentralgw/media:/data/media/\"]}}"
+                        },
+                        "type": "docker",
+                        "env": {
+                            "onvifModuleId": {
+                                "value": "OnvifModule"
+                            },
+                            "avaEdgeModuleId": {
+                                "value": "avaEdge"
+                            },
+                            "avaOnvifCameraModelId": {
+                                "value": "dtmi:com:azuremedia:model:AvaOnvifCameraDevice;1"
+                            }
+                        },
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "version": "1.0",
+                        "startupOrder": 4
                     }
                 }
             }

@@ -1,21 +1,21 @@
 [
     {
-        "@id": "dtmi:com:azuremedia:model:AvaEdgeCameraDevice;1",
+        "@id": "dtmi:com:azuremedia:model:AvaOnvifCameraDevice;1",
         "@context": [
             "dtmi:iotcentral:context;2",
             "dtmi:dtdl:context;2"
         ],
         "@type": "Interface",
         "displayName": {
-            "en": "AVA Edge Device Model"
+            "en": "AVA ONVIF Camera Device Model"
         },
-        "description": "AVA Edge Device Model",
+        "description": "AVA ONVIF Camera Device Model",
         "extends": [
-            "dtmi:com:azuremedia:AvaEdgeCameraDevice:DeviceInformation;1",
-            "dtmi:com:azuremedia:AvaEdgeCameraDevice:Camera;1",
-            "dtmi:com:azuremedia:AvaEdgeCameraDevice:AvaEdgeOperations;1",
-            "dtmi:com:azuremedia:AvaEdgeCameraDevice:AvaEdgeDiagnostics;1",
-            "dtmi:com:azuremedia:AvaEdgeCameraDevice:AiInference;1"
+            "dtmi:com:azuremedia:AvaOnvifCameraDevice:DeviceInformation;1",
+            "dtmi:com:azuremedia:AvaOnvifCameraDevice:AvaOnvifCamera;1",
+            "dtmi:com:azuremedia:AvaOnvifCameraDevice:AvaOperations;1",
+            "dtmi:com:azuremedia:AvaOnvifCameraDevice:AvaDiagnostics;1",
+            "dtmi:com:azuremedia:AvaOnvifCameraDevice:AiInference;1"
         ],
         "contents": []
     },
@@ -24,10 +24,10 @@
             "dtmi:iotcentral:context;2",
             "dtmi:dtdl:context;2"
         ],
-        "@id": "dtmi:com:azuremedia:AvaEdgeCameraDevice:DeviceInformation;1",
+        "@id": "dtmi:com:azuremedia:AvaOnvifCameraDevice:DeviceInformation;1",
         "@type": "Interface",
         "displayName": {
-            "en": "Onvif Camera Device Information Interface"
+            "en": "Camera Device Information Interface"
         },
         "contents": [
             {
@@ -73,11 +73,11 @@
         ]
     },
     {
-        "@id": "dtmi:com:azuremedia:AvaEdgeOnvifCameraDevice:Camera;1",
+        "@id": "dtmi:com:azuremedia:AvaOnvifCameraDevice:AvaOnvifCamera;1",
         "@context": "dtmi:dtdl:context;2",
         "@type": "Interface",
         "displayName": {
-            "en": "Camera Interface"
+            "en": "Onvif Camera Interface"
         },
         "contents": [
             {
@@ -181,6 +181,263 @@
                 "schema": "string"
             },
             {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "Upload Image"
+                },
+                "name": "evUploadImage",
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "Image Capture Url"
+                },
+                "name": "rpCaptureImageUrl",
+                "schema": "string"
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get Onvif Camera Properties"
+                },
+                "name": "cmGetOnvifCameraProps",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "statusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get Onvif Media Profiles"
+                },
+                "name": "cmGetOnvifMediaProfiles",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "statusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Set Onvif Media Profile"
+                },
+                "name": "cmSetOnvifMediaProfile",
+                "request": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Set ONVIF Media Profile Request"
+                    },
+                    "name": "CaptureImageRequest",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Set ONVIF Media Profile Request"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Onvif Media Profile Token"
+                                },
+                                "name": "mediaProfileToken",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                },
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "statusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Get Onvif Rtsp Stream Url"
+                },
+                "name": "cmGetOnvifRtspStreamUrl",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "statusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Capture Image"
+                },
+                "name": "cmCaptureOnvifImage",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "statusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Restart Onvif Camera"
+                },
+                "name": "cmRestartOnvifCamera",
+                "response": {
+                    "@type": "CommandPayload",
+                    "displayName": {
+                        "en": "Command Response"
+                    },
+                    "name": "CommandResponse",
+                    "schema": {
+                        "@type": "Object",
+                        "displayName": {
+                            "en": "Command Response"
+                        },
+                        "fields": [
+                            {
+                                "displayName": {
+                                    "en": "Status Code"
+                                },
+                                "name": "statusCode",
+                                "schema": "long"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Message"
+                                },
+                                "name": "message",
+                                "schema": "string"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
                 "@type": "Command",
                 "displayName": {
                     "en": "Start AVA Processing"
@@ -210,13 +467,6 @@
                                     "en": "AVA Live Pipeline Name"
                                 },
                                 "name": "avaLivePipelineName",
-                                "schema": "string"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Onvif Media Profile Token"
-                                },
-                                "name": "mediaProfileToken",
                                 "schema": "string"
                             }
                         ]
@@ -327,11 +577,11 @@
         ]
     },
     {
-        "@id": "dtmi:com:azuremedia:AvaEdgeCameraDevice:AvaEdgeOperations;1",
+        "@id": "dtmi:com:azuremedia:AvaOnvifCameraDevice:AvaOperations;1",
         "@context": "dtmi:dtdl:context;2",
         "@type": "Interface",
         "displayName": {
-            "en": "AVA Edge Operations Interface"
+            "en": "AVA Operations Interface"
         },
         "contents": [
             {
@@ -432,11 +682,11 @@
         ]
     },
     {
-        "@id": "dtmi:com:azuremedia:AvaEdgeCameraDevice:AvaEdgeDiagnostics;1",
+        "@id": "dtmi:com:azuremedia:AvaOnvifCameraDevice:AvaDiagnostics;1",
         "@context": "dtmi:dtdl:context;2",
         "@type": "Interface",
         "displayName": {
-            "en": "AVA Edge Diagnostics Interface"
+            "en": "AVA Diagnostics Interface"
         },
         "contents": [
             {
@@ -550,7 +800,7 @@
         ]
     },
     {
-        "@id": "dtmi:com:azuremedia:AvaEdgeCameraDevice:AiInference;1",
+        "@id": "dtmi:com:azuremedia:AvaOnvifCameraDevice:AiInference;1",
         "@context": "dtmi:dtdl:context;2",
         "@type": "Interface",
         "displayName": {

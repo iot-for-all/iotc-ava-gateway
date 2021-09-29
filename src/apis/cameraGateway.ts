@@ -24,30 +24,22 @@ export class CameraGatewayRoutes extends RoutePlugin {
     })
     public async postCreateCamera(request: Request, h: ResponseToolkit): Promise<ResponseObject> {
         try {
-            const cameraInfo: ICameraProvisionInfo = {
-                cameraId: request.params?.cameraId,
-                cameraName: (request.payload as any)?.cameraName,
-                ipAddress: (request.payload as any)?.ipAddress,
-                onvifUsername: (request.payload as any)?.onvifUsername,
-                onvifPassword: (request.payload as any)?.onvifPassword
-            };
-
+            const cameraInfo = request.payload as ICameraProvisionInfo;
             if (!cameraInfo.cameraId
                 || !cameraInfo.cameraName
                 || !cameraInfo.ipAddress
-                || !cameraInfo.onvifUsername
-                || !cameraInfo.onvifPassword) {
+                || !cameraInfo.username
+                || !cameraInfo.password) {
                 throw boom_badRequest('Missing parameters (cameraId, cameraName, detectionType)');
             }
 
-            const dpsProvisionResult = await this.cameraGateway.createCamera(cameraInfo);
+            const operationResult = await this.cameraGateway.createCamera(cameraInfo);
 
-            const resultMessage = dpsProvisionResult.dpsProvisionMessage || dpsProvisionResult.clientConnectionMessage;
-            if (dpsProvisionResult.dpsProvisionStatus === false || dpsProvisionResult.clientConnectionStatus === false) {
-                throw boom_badImplementation(resultMessage);
+            if (!operationResult.status) {
+                throw boom_badImplementation(operationResult.message);
             }
 
-            return h.response(resultMessage).code(201);
+            return h.response(operationResult.message).code(201);
         }
         catch (ex) {
             throw boom_badRequest(ex.message);

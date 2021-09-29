@@ -37,6 +37,7 @@ Select Administration from the left pane, then select Device connection. Next, s
 ## Import the IoT Central device capability models for the camera device and for the gateway module
 IoT Central uses capability models to describe what kind of data the devices will send (Telemetry, State, Events, and Properties) as well as what kind of commands (Direct Methods) the devices support. This gives IoT Central insight into how to support the devices and how to reason over the ingested data - e.g. rules, relationships, visualizations, and data export formats.
 
+### Import the Device Model
 Select Device templates from the left pane. Select the new option to create a new template:  
 <img src="./media/newiotdevicetemplate.png" alt="New Device Template" />
 
@@ -52,8 +53,40 @@ Select Create:
 Now select the Import a model option:  
 <img src="./media/importdevicemodel.png" alt="Import Device Model" />
 
-When asked, navigate to this repository to the `./setup/AvaEdgeOnvifCameraDeviceDcm.json` file and select open. At this point the model should be displayed with all of the interfaces describing the device's capabilities:  
-<img src="./media/avaedgeonvifcameramodel.png" alt="Onvif Camera Model" />
+When asked, navigate to this repository to the `./setup/deviceCapabilityModels/AvaOnvifCameraDeviceDcm.json` file and select open. At this point the model should be displayed with all of the interfaces describing the device's capabilities. Now publish the model by selecting the publish option at the top of the window:  
+<img src="./media/avaonvifcameramodel.png" alt="Onvif Camera Model" />
+
+### Import the Edge Gateway Model
+We will use the same steps to import the gateway model. One extra step will be to associate the device model with the gateway. This establishes the relationship between the gateway module that we will deploy and the leaf devices (downstream devices) that it will create.
+
+Select Device templates from the left pane. Select the new option to create a new template:  
+<img src="./media/newiotdevicetemplate2.png" alt="New Edge Template" />
+
+Next, select the Azure IoT Edge custom template option, and then select Next: Customize at the bottom of the window:  
+<img src="./media/newcustomedgetemplate.png" alt="Custom Edge Template" />
+
+Name the edge template. And this time also check the gateway option. Be sure not to select the Browse option. Then select Next: Review at the bottom of the window:  
+<img src="./media/nameedgetemplate.png" alt="Edge Template Name" />
+
+Select Create:  
+<img src="./media/createcustomedgetemplate.png" alt="Create Edge Template" />
+
+Now select the Import a model option:  
+<img src="./media/importedgemodel.png" alt="Import Edge Model" />
+
+When asked, navigate to this repository to the `./setup/deviceCapabilityModels/AvaEdgeGatewayDcm.json.json` file and select open. At this point the model should be displayed with all of the interfaces describing the gateway device's capabilities:  
+<img src="./media/avaedgegatewaymodel.png" alt="Edge Gateway Model" />
+
+Now we need to add a relationship between the gateway and leaf devices that it creates. Select the Relationship item under the Model pane, then select Add Capability on the right:  
+<img src="./media/addrelationship.png" alt="Add Relationship" />
+
+Name the device relationship and select the device model that we published in the previous steps and then save it:  
+<img src="./media/edgegatewaydevicerelationship.png" alt="Add Relationship" />
+
+Now we are almost ready to publish this template, but first we have to add an edge deployment manifest.
+
+### Create the Edge Deployment Manifest
+
 
 ## Prerequisites
 * An Azure account that includes an active subscription.[Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F) if you don't already have one.

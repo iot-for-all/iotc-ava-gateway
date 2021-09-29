@@ -7,7 +7,7 @@
         "test": "node ./node_modules/jest/bin/jest.js",
         "eslint": "eslint -c .eslintrc.json --ext .ts ./src",
         "build": "node ./node_modules/typescript/bin/tsc -p .",
-        "dockerbuild": "node ./scripts/dockerBuild.js --docker-build",
+        "dockerbuild": "npm run build && node ./scripts/dockerBuild.js --docker-build",
         "dockerpush": "node ./scripts/dockerBuild.js --docker-push",
         "preversion": "npm test",
         "version": "node ./scripts/dockerBuild.js --docker-build",

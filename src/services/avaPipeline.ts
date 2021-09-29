@@ -190,8 +190,8 @@ export class AvaPipeline {
 
     private async setLivePipeline(): Promise<boolean> {
         this.setLivePipelineParam('rtspUrl', this.rtspUrlInternal);
-        this.setLivePipelineParam('rtspAuthUsername', this.cameraInfo.onvifUsername);
-        this.setLivePipelineParam('rtspAuthPassword', this.cameraInfo.onvifPassword);
+        this.setLivePipelineParam('rtspAuthUsername', this.cameraInfo.username);
+        this.setLivePipelineParam('rtspAuthPassword', this.cameraInfo.password);
         this.setLivePipelineParam('assetName', this.avaRecordingAssetName);
 
         const response = await this.iotCentralModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.SetLivePipeline, this.avaLivePipelineInternal);

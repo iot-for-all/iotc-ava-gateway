@@ -5,13 +5,13 @@
         "description": "Event-based video recording to Video Sink based on motion events, and using HTTP Extension to send images to an external inference engine",
         "parameters": [
             {
-                "name": "rtspUserName",
+                "name": "rtspAuthUsername",
                 "type": "String",
                 "description": "rtsp source user name.",
                 "default": "dummyUserName"
             },
             {
-                "name": "rtspPassword",
+                "name": "rtspAuthPassword",
                 "type": "String",
                 "description": "rtsp source password.",
                 "default": "dummyPassword"
@@ -28,7 +28,13 @@
                 "default": "medium"
             },
             {
-                "name": "httpAIServerAddress",
+                "name": "assetName",
+                "type": "String",
+                "description": "name of the AVA CVR asset",
+                "default": "motionAsset"
+            },
+            {
+                "name": "inferencingUrl",
                 "type": "String",
                 "description": "AI Server Address",
                 "default": "http://yolov3/score"
@@ -37,7 +43,7 @@
                 "name": "hubSinkOutputName",
                 "type": "String",
                 "description": "hub sink output name",
-                "default": "inferenceOutput"
+                "default": "avaTelemetry"
             },
             {
                 "name": "imageScaleMode",
@@ -119,7 +125,7 @@
                 "name": "httpExtension",
                 "endpoint": {
                     "@type": "#Microsoft.VideoAnalyzer.UnsecuredEndpoint",
-                    "url": "${httpAIServerAddress}",
+                    "url": "${inferencingUrl}",
                     "credentials": {
                         "@type": "#Microsoft.VideoAnalyzer.UsernamePasswordCredentials",
                         "username": "user",
@@ -158,7 +164,7 @@
             {
                 "@type": "#Microsoft.VideoAnalyzer.VideoSink",
                 "name": "videoSink",
-                "videoName": "sample-motion-with-http-extension",
+                "videoName": "${assetName}",
                 "inputs": [
                     {
                         "nodeName": "signalGateProcessor",
@@ -172,7 +178,7 @@
                     }
                 ],
                 "videoCreationProperties": {
-                    "title": "sample-motion-with-http-extension",
+                    "title": "${assetName}",
                     "description": "Sample video using motion with HTTP extension",
                     "segmentLength": "PT30S"
                 },

@@ -359,7 +359,7 @@
                     "schema": {
                         "@type": "Object",
                         "displayName": {
-                            "en": "Object"
+                            "en": "Configure Gateway Request"
                         },
                         "fields": [
                             {
@@ -370,7 +370,7 @@
                                 "schema": {
                                     "@type": "Object",
                                     "displayName": {
-                                        "en": "Object"
+                                        "en": "IoT Central Configuration"
                                     },
                                     "fields": [
                                         {
@@ -420,16 +420,9 @@
                                         },
                                         {
                                             "displayName": {
-                                                "en": "avaEdgeCameraModelId"
+                                                "en": "avaOnvifCameraModelId"
                                             },
-                                            "name": "avaEdgeCameraModelId",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "avaEdgeOnvifCameraModelId"
-                                            },
-                                            "name": "avaEdgeOnvifCameraModelId",
+                                            "name": "avaOnvifCameraModelId",
                                             "schema": "string"
                                         }
                                     ]
@@ -443,7 +436,7 @@
                                 "schema": {
                                     "@type": "Object",
                                     "displayName": {
-                                        "en": "Object"
+                                        "en": "Blob Storage Configuration"
                                     },
                                     "fields": [
                                         {
@@ -564,63 +557,6 @@
             {
                 "@type": "Command",
                 "displayName": {
-                    "en": "Add Onvif Camera"
-                },
-                "name": "cmAddOnvifCamera",
-                "request": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Add Onvif Camera Request"
-                    },
-                    "name": "AddOnvifCameraRequest",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Add Onvif Camera Request"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Camera Id"
-                                },
-                                "name": "cameraId",
-                                "schema": "string"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Camera Name"
-                                },
-                                "name": "cameraName",
-                                "schema": "string"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "IP Address"
-                                },
-                                "name": "ipAddress",
-                                "schema": "string"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Onvif Username"
-                                },
-                                "name": "onvifUsername",
-                                "schema": "string"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Onvif Password"
-                                },
-                                "name": "onvifPassword",
-                                "schema": "string"
-                            }
-                        ]
-                    }
-                }
-            },
-            {
-                "@type": "Command",
-                "displayName": {
                     "en": "Add Camera"
                 },
                 "name": "cmAddCamera",
@@ -659,17 +595,94 @@
                             },
                             {
                                 "displayName": {
-                                    "en": "Camera Username"
+                                    "en": "Username"
                                 },
-                                "name": "cameraUsername",
+                                "name": "username",
                                 "schema": "string"
                             },
                             {
                                 "displayName": {
-                                    "en": "Camera Password"
+                                    "en": "Password"
                                 },
-                                "name": "cameraPassword",
+                                "name": "password",
                                 "schema": "string"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "OnvifCamera"
+                                },
+                                "name": "isOnvifCamera",
+                                "schema": "boolean"
+                            },
+                            {
+                                "displayName": {
+                                    "en": "Plain Camera Information"
+                                },
+                                "name": "plainCameraInformation",
+                                "schema": {
+                                    "@type": "Object",
+                                    "displayName": {
+                                        "en": "Plain Camera Information"
+                                    },
+                                    "fields": [
+                                        {
+                                            "displayName": {
+                                                "en": "RTSP Video Stream"
+                                            },
+                                            "name": "rtspVideoStream",
+                                            "schema": "string"
+                                        },
+                                        {
+                                            "displayName": {
+                                                "en": "Camera Device Information"
+                                            },
+                                            "name": "cameraDeviceInformation",
+                                            "schema": {
+                                                "@type": "Object",
+                                                "displayName": {
+                                                    "en": "Camera Device Information"
+                                                },
+                                                "fields": [
+                                                    {
+                                                        "displayName": {
+                                                            "en": "Manufacturer"
+                                                        },
+                                                        "name": "manufacturer",
+                                                        "schema": "string"
+                                                    },
+                                                    {
+                                                        "displayName": {
+                                                            "en": "Model"
+                                                        },
+                                                        "name": "model",
+                                                        "schema": "string"
+                                                    },
+                                                    {
+                                                        "displayName": {
+                                                            "en": "Firmware Version"
+                                                        },
+                                                        "name": "firmwareVersion",
+                                                        "schema": "string"
+                                                    },
+                                                    {
+                                                        "displayName": {
+                                                            "en": "Hardware Id"
+                                                        },
+                                                        "name": "hardwareId",
+                                                        "schema": "string"
+                                                    },
+                                                    {
+                                                        "displayName": {
+                                                            "en": "Serial Number"
+                                                        },
+                                                        "name": "serialNumber",
+                                                        "schema": "string"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
                             }
                         ]
                     }

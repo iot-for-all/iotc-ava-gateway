@@ -50,7 +50,7 @@
             "type": "node",
             "request": "attach",
             "port": 9229,
-            "address": "10.10.16.130",
+            "address": "10.10.16.128",
             "localRoot": "${workspaceFolder}/dist",
             "remoteRoot": "/app/dist",
             "protocol": "inspector",
