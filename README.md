@@ -11,6 +11,10 @@ A quick note about the documentation and the differences between using IoT Hub v
 
 Start the tutorial linked above up to the section "Set up your development environment". At this point you should have created an Azure Video Analyzer account with an associated Azure Storage Account and an Azure Virtual Machine to act as your simulated IoT edge network and device. The deployment in the tutorial also creates an Azure IoT Hub, but we will ignore that resource for the purposes of this tutorial.
 
+## Create an Azure Video Analyzer account
+ * This will create associated Azure resources including a storage account and user-assigned managed identity
+ * Save the Video Analyzer Edge Module access token
+
 ## Create an Azure IoT Central Application
 Next, you should create an Azure IoT Central application to use as your device management and data ingestions platform. Follow the instructions in the [Create an IoT Central application guide](https://docs.microsoft.com/en-us/azure/iot-central/core/howto-create-iot-central-application#azure-iot-central-site) to create a new IoT Central application using the custom app option. Select the appropriate plan for your needs.
 
@@ -19,18 +23,18 @@ In order for the IoT Edge module to access the APIs necessary to provision and r
 
 #### App Subdomain
 When you create your IoT Central application, this is the name you give it.  
-<img src="./media/appsubdomain.png" width="50%" alt="App Subdomain" />
+<img src="./media/appsubdomain.png" width="40%" alt="App Subdomain" />
 
 #### App Basedomain
 This is the host portion of the main app url, usually azureiotcentral.com.  
-<img src="./media/appbasedomain.png" width="50%" alt="App Basedomain" />
+<img src="./media/appbasedomain.png" width="40%" alt="App Basedomain" />
 
 #### Api Token
 In your IoT Central application select Administration from the left pane, then select API tokens. You will see an option at the top of the window to create a new API token. Create a new token using the Operator role. Copy the value of the API token for use later.  
 <img src="./media/apitoken.png" alt="API Token" />
 
 #### Device Key and Scope Id
-Select Administration from the left pane, then select Device connection. Next, select the SAS-IoT-Devices link to reveal the Shared Access Signature primary key used to create device provisioning keys. Copy the Primary key and Scope id for use later.  
+Select Administration from the left pane, then select Device connection. Next, select the SAS-IoT-Devices link to reveal the Shared access signature Primary key used to create device provisioning keys. Copy the Primary key and Scope id for use later.  
 <img src="./media/deviceconnection.png" alt="Device Connection" />
 <img src="./media/devicekeyscopeid.png" alt="Device Key" />
 
@@ -53,14 +57,14 @@ Select Create:
 Now select the Import a model option:  
 <img src="./media/importdevicemodel.png" alt="Import Device Model" />
 
-When asked, navigate to this repository to the `./setup/deviceCapabilityModels/AvaOnvifCameraDeviceDcm.json` file and select open. At this point the model should be displayed with all of the interfaces describing the device's capabilities. Now publish the model by selecting the publish option at the top of the window:  
+When asked, navigate in your repository to the `./setup/deviceCapabilityModels/AvaOnvifCameraDeviceDcm.json` file and select open. At this point the model should be displayed with all of the interfaces describing the device's capabilities. Now publish the model by selecting the publish option at the top of the window:  
 <img src="./media/avaonvifcameramodel.png" alt="Onvif Camera Model" />
 
 ### Import the Edge Gateway Model
 We will use the same steps to import the gateway model. One extra step will be to associate the device model with the gateway. This establishes the relationship between the gateway module that we will deploy and the leaf devices (downstream devices) that it will create.
 
 Select Device templates from the left pane. Select the new option to create a new template:  
-<img src="./media/newiotdevicetemplate2.png" alt="New Edge Template" />
+<img src="./media/newiotdevicetemplate.png" alt="New Edge Template" />
 
 Next, select the Azure IoT Edge custom template option, and then select Next: Customize at the bottom of the window:  
 <img src="./media/newcustomedgetemplate.png" alt="Custom Edge Template" />
@@ -74,10 +78,10 @@ Select Create:
 Now select the Import a model option:  
 <img src="./media/importedgemodel.png" alt="Import Edge Model" />
 
-When asked, navigate to this repository to the `./setup/deviceCapabilityModels/AvaEdgeGatewayDcm.json.json` file and select open. At this point the model should be displayed with all of the interfaces describing the gateway device's capabilities:  
+When asked, navigate in your repository to the `./setup/deviceCapabilityModels/AvaEdgeGatewayDcm.json` file and select open. At this point the model should be displayed with all of the interfaces describing the gateway device's capabilities:  
 <img src="./media/avaedgegatewaymodel.png" alt="Edge Gateway Model" />
 
-Now we need to add a relationship between the gateway and leaf devices that it creates. Select the Relationship item under the Model pane, then select Add Capability on the right:  
+Now we need to add a relationship between the gateway and leaf devices that it creates (the leaf devices are represented by the previous AvaOnvifCameraDevice model we imported). Select the top-level Relationship item under the Model in the left pane, then select Add relationship on the right:  
 <img src="./media/addrelationship.png" alt="Add Relationship" />
 
 Name the device relationship and select the device model that we published in the previous steps and then save it:  
@@ -85,8 +89,17 @@ Name the device relationship and select the device model that we published in th
 
 Now we are almost ready to publish this template, but first we have to add an edge deployment manifest.
 
-### Create the Edge Deployment Manifest
+### Attach the Edge Deployment Manifest
+ * select edit manifest - you should see the manifest display screen [editmanifest.png]
+ * select edit or import manifest - navigate to ./setup/deploymentManifests/quickstart [replacemanifest.png]
+ * you should now see your manifest displayed [displaymanifest.png]
 
+## Create an IoT Edge Device
+ * Install the latest version 1.2
+ * Configure the config.toml file "DPS provisioning with symmetric key" section. Provide the values for:
+   * id_scope
+   * registration_id (the device id in IoT Central)
+   * symmetric_key
 
 ## Prerequisites
 * An Azure account that includes an active subscription.[Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F) if you don't already have one.

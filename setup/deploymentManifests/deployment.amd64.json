@@ -59,7 +59,7 @@
                     },
                     "avaEdge": {
                         "settings": {
-                            "image": "<MCR_PATH>",
+                            "image": "mcr.microsoft.com/media/video-analyzer:1",
                             "createOptions": "{\"HostConfig\":{\"LogConfig\":{\"Type\":\"\",\"Config\":{\"max-size\":\"10m\",\"max-file\":\"10\"}},\"IpcMode\":\"host\",\"Binds\":[\"/var/media/:/var/media/\",\"/var/lib/videoanalyzer/:/var/lib/videoanalyzer/\"]}}"
                         },
                         "type": "docker",

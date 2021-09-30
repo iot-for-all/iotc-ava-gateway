@@ -1,5 +1,5 @@
 import { Server } from '@hapi/hapi';
-import { IIotCentralModule } from '../plugins/iotCentralModule';
+import { IIotCentralPluginModule } from '../plugins/iotCentralModule';
 import { ICameraProvisionInfo } from './cameraGateway';
 import { Message as IoTMessage } from 'azure-iot-device';
 import * as moment from 'moment';
@@ -38,7 +38,7 @@ export class AvaPipeline {
     }
 
     private server: Server;
-    private iotCentralModule: IIotCentralModule;
+    private iotCentralPluginModule: IIotCentralPluginModule;
     private avaEdgeModuleId: string;
     private cameraInfo: ICameraProvisionInfo;
     private rtspUrlInternal: string;
@@ -49,10 +49,10 @@ export class AvaPipeline {
     private avaPipelineTopologyObject: any;
     private avaLivePipelineObject: any;
 
-    constructor(server: Server, avaEdgeModuleId: string, cameraInfo: ICameraProvisionInfo, rtspUrl: string, avaPipelineTopology: any, avaLivePipeline: any) {
+    constructor(server: Server, cameraInfo: ICameraProvisionInfo, rtspUrl: string, avaPipelineTopology: any, avaLivePipeline: any) {
         this.server = server;
-        this.iotCentralModule = server.settings.app.iotCentralModule;
-        this.avaEdgeModuleId = avaEdgeModuleId;
+        this.iotCentralPluginModule = server.settings.app.iotCentralPluginModule;
+        this.avaEdgeModuleId = this.server.settings.app.cameraGatewayPluginModule.moduleEnvironmentConfig.avaEdgeModuleId;
         this.cameraInfo = cameraInfo;
         this.rtspUrlInternal = rtspUrl;
         this.avaPipelineTopologyInternal = avaPipelineTopology;
@@ -161,13 +161,13 @@ export class AvaPipeline {
     }
 
     private async setTopologyPipeline(): Promise<boolean> {
-        const response = await this.iotCentralModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.SetTopology, this.avaPipelineTopologyInternal);
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.SetTopology, this.avaPipelineTopologyInternal);
 
         return response.status >= 200 && response.status < 300;
     }
 
     private async deletePipelineTopology(): Promise<boolean> {
-        const response = await this.iotCentralModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeleteTopology, this.avaPipelineTopologyObject);
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeleteTopology, this.avaPipelineTopologyObject);
 
         return response.status >= 200 && response.status < 300;
     }
@@ -194,25 +194,25 @@ export class AvaPipeline {
         this.setLivePipelineParam('rtspAuthPassword', this.cameraInfo.password);
         this.setLivePipelineParam('assetName', this.avaRecordingAssetName);
 
-        const response = await this.iotCentralModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.SetLivePipeline, this.avaLivePipelineInternal);
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.SetLivePipeline, this.avaLivePipelineInternal);
 
         return response.status >= 200 && response.status < 300;
     }
 
     private async deleteLivePipeline(): Promise<boolean> {
-        const response = await this.iotCentralModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeleteLivePipeline, this.avaLivePipelineObject);
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeleteLivePipeline, this.avaLivePipelineObject);
 
         return response.status >= 200 && response.status < 300;
     }
 
     private async activateLivePipeline(): Promise<boolean> {
-        const response = await this.iotCentralModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.ActivateLivePipeline, this.avaLivePipelineObject);
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.ActivateLivePipeline, this.avaLivePipelineObject);
 
         return response.status >= 200 && response.status < 300;
     }
 
     private async deactivateLivePipeline(): Promise<boolean> {
-        const response = await this.iotCentralModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeactivateLivePipeline, this.avaLivePipelineObject);
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeactivateLivePipeline, this.avaLivePipelineObject);
 
         return response.status >= 200 && response.status < 300;
     }

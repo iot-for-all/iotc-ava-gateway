@@ -11,7 +11,7 @@ import { bind, defer, sleep } from '../utils';
 
 declare module '@hapi/hapi' {
     interface ServerOptionsApp {
-        iotCentralModule?: IIotCentralModule;
+        iotCentralPluginModule?: IIotCentralPluginModule;
     }
 }
 
@@ -27,6 +27,7 @@ export interface IDirectMethodResult {
 type DirectMethodFunction = (commandRequest: DeviceMethodRequest, commandResponse: DeviceMethodResponse) => Promise<void>;
 
 export interface IIotCentralModulePluginOptions {
+    initializePlugin(): void;
     debugTelemetry(): boolean;
     onHandleModuleProperties(desiredProps: any): Promise<void>;
     onHandleDownstreamMessages?(inputName: string, message: IoTMessage): Promise<void>;
@@ -36,10 +37,10 @@ export interface IIotCentralModulePluginOptions {
     onModuleReady(): Promise<void>;
 }
 
-export interface IIotCentralModule {
+export interface IIotCentralPluginModule {
     moduleId: string;
     deviceId: string;
-    getModuleClient(): ModuleClient;
+    moduleClient: ModuleClient;
     debugTelemetry(): boolean;
     sendMeasurement(data: any, outputName?: string): Promise<void>;
     updateModuleProperties(properties: any): Promise<void>;
@@ -66,17 +67,16 @@ export const iotCentralModulePlugin: Plugin<any> = {
             throw new Error('Missing required option onModuleReady in IoTCentralModuleOptions');
         }
 
-        const plugin = new IotCentralModule(server, options);
+        const plugin = new IotCentralPluginModule(server, options);
 
-        server.settings.app.iotCentralModule = plugin;
+        server.settings.app.iotCentralPluginModule = plugin;
 
         await plugin.startModule();
     }
 };
 
-class IotCentralModule implements IIotCentralModule {
+class IotCentralPluginModule implements IIotCentralPluginModule {
     private server: Server;
-    private moduleClient: ModuleClient = null;
     private moduleTwin: Twin = null;
     private deferredStart = defer();
     private options: IIotCentralModulePluginOptions;
@@ -90,6 +90,8 @@ class IotCentralModule implements IIotCentralModule {
         let result = false;
 
         try {
+            this.options.initializePlugin();
+
             for (let connectCount = 1; !result && connectCount <= 3; connectCount++) {
                 result = await this.connectModuleClient();
 
@@ -116,10 +118,7 @@ class IotCentralModule implements IIotCentralModule {
 
     public moduleId: string = process.env.IOTEDGE_MODULEID || '';
     public deviceId: string = process.env.IOTEDGE_DEVICEID || '';
-
-    public getModuleClient(): ModuleClient {
-        return this.moduleClient;
-    }
+    public moduleClient: ModuleClient = null;
 
     public debugTelemetry(): boolean {
         return this.options.debugTelemetry();
@@ -205,7 +204,7 @@ class IotCentralModule implements IIotCentralModule {
                 this.server.log([ModuleName, 'info'], `invokeOnvifModuleMethod request: ${JSON.stringify(methodParams, null, 4)}`);
             }
 
-            const response = await this.moduleClient.invokeMethod(this.server.settings.app.iotCentralModule.deviceId, moduleId, methodParams);
+            const response = await this.moduleClient.invokeMethod(this.deviceId, moduleId, methodParams);
 
             if (this.debugTelemetry()) {
                 this.server.log([ModuleName, 'info'], `invokeOnvifModuleMethod response: ${JSON.stringify(response, null, 4)}`);

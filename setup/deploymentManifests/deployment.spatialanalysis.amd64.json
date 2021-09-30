@@ -54,7 +54,7 @@
                         "restartPolicy": "always",
                         "startupOrder": 2,
                         "settings": {
-                            "image": "<MCR_PATH>",
+                            "image": "mcr.microsoft.com/azure-cognitive-services/vision/spatial-analysis:latest",
                             "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"50051/tcp\":[{\"HostPort\":\"50051\"}]},\"IpcMode\":\"host\",\"Binds\":[\"/tmp/.X11-unix:/tmp/.X11-unix\"],\"Runtime\":\"nvidia\",\"ShmSize\":536870912,\"LogConfig\":{\"Type\":\"json-file\",\"Config\":{\"max-size\":\"10m\",\"max-file\":\"200\"}}}}"
                         },
                         "env": {
@@ -104,7 +104,7 @@
                     },
                     "avaEdge": {
                         "settings": {
-                            "image": "<MCR_PATH>",
+                            "image": "mcr.microsoft.com/media/video-analyzer:1",
                             "createOptions": "{\"HostConfig\":{\"LogConfig\":{\"Type\":\"\",\"Config\":{\"max-size\":\"10m\",\"max-file\":\"10\"}},\"IpcMode\":\"host\",\"Binds\":[\"/var/media/:/var/media/\",\"/var/lib/videoanalyzer/:/var/lib/videoanalyzer/\"]}}"
                         },
                         "type": "docker",

@@ -1,5 +1,5 @@
 import { Server } from '@hapi/hapi';
-import { IIotCentralModule } from '../plugins/iotCentralModule';
+import { IIotCentralPluginModule } from '../plugins/iotCentralModule';
 import { AvaPipeline } from './avaPipeline';
 import {
     PipelineCache,
@@ -172,9 +172,8 @@ interface IAiInferenceSettings {
 
 export class AvaCameraDevice {
     private server: Server;
-    private iotCentralModule: IIotCentralModule;
+    private iotCentralPluginModule: IIotCentralPluginModule;
     private onvifModuleId: string;
-    private avaEdgeModuleId: string;
     private appScopeId: string;
     private avaPipeline: AvaPipeline;
     private cameraInfo: ICameraProvisionInfo;
@@ -206,15 +205,12 @@ export class AvaCameraDevice {
 
     constructor(
         server: Server,
-        onvifModuleId: string,
-        avaEdgeModuleId: string,
         appScopeId: string,
         cameraInfo: ICameraProvisionInfo
     ) {
         this.server = server;
-        this.iotCentralModule = server.settings.app.iotCentralModule;
-        this.onvifModuleId = onvifModuleId;
-        this.avaEdgeModuleId = avaEdgeModuleId;
+        this.iotCentralPluginModule = server.settings.app.iotCentralPluginModule;
+        this.onvifModuleId = this.server.settings.app.cameraGatewayPluginModule.moduleEnvironmentConfig.onvifModuleId;
         this.appScopeId = appScopeId;
         this.cameraInfo = cameraInfo;
     }
@@ -733,9 +729,9 @@ export class AvaCameraDevice {
             message: `Retrieved camera properties successfully`
         };
 
-        if (!this.cameraInfo.isOnvifCamera) {
+        if (!this.cameraInfo?.isOnvifCamera) {
             this.cameraDeviceInformationInternal = {
-                ...this.cameraInfo.plainCameraInformation.cameraDeviceInformation
+                ...this.cameraInfo?.plainCameraInformation?.cameraDeviceInformation
             };
 
             response.payload = this.cameraDeviceInformationInternal;
@@ -744,7 +740,7 @@ export class AvaCameraDevice {
         }
 
         try {
-            const deviceInfoResult = await this.iotCentralModule.invokeDirectMethod(
+            const deviceInfoResult = await this.iotCentralPluginModule.invokeDirectMethod(
                 this.onvifModuleId,
                 'GetDeviceInformation',
                 {
@@ -791,7 +787,7 @@ export class AvaCameraDevice {
             payload: []
         };
 
-        if (!this.cameraInfo.isOnvifCamera) {
+        if (!this.cameraInfo?.isOnvifCamera) {
             response.statusCode = 400;
             response.message = `This camera is not provisioned as an ONVIF supported camera`;
 
@@ -799,7 +795,7 @@ export class AvaCameraDevice {
         }
 
         try {
-            const mediaProfileResult = await this.iotCentralModule.invokeDirectMethod(
+            const mediaProfileResult = await this.iotCentralPluginModule.invokeDirectMethod(
                 this.onvifModuleId,
                 'GetMediaProfileList',
                 {
@@ -831,7 +827,7 @@ export class AvaCameraDevice {
             message: `Set ONVIF media profiles successfully`
         };
 
-        if (!this.cameraInfo.isOnvifCamera) {
+        if (!this.cameraInfo?.isOnvifCamera) {
             response.statusCode = 400;
             response.message = `This camera is not provisioned as an ONVIF supported camera`;
 
@@ -864,21 +860,6 @@ export class AvaCameraDevice {
             message: `Retrieved ONVIF RTSP stream url successfully`
         };
 
-        if (!this.cameraInfo.isOnvifCamera) {
-            if (!this.cameraInfo.plainCameraInformation?.rtspVideoStream) {
-                response.statusCode = 400;
-                response.message = `Missing RTSP video stream url for plain camera`;
-
-                return response;
-            }
-
-            response.statusCode = 200;
-            response.message = `Retrieved RTSP stream url successfully`;
-            response.payload = this.cameraInfo.plainCameraInformation?.rtspVideoStream;
-
-            return response;
-        }
-
         try {
             const requestParams = {
                 Address: this.cameraInfo.ipAddress,
@@ -887,7 +868,7 @@ export class AvaCameraDevice {
                 MediaProfileToken: mediaProfileToken
             };
 
-            const serviceResponse = await this.iotCentralModule.invokeDirectMethod(
+            const serviceResponse = await this.iotCentralPluginModule.invokeDirectMethod(
                 this.onvifModuleId,
                 'GetRTSPStreamURI',
                 requestParams);
@@ -911,7 +892,7 @@ export class AvaCameraDevice {
             message: `Image capture completed successfully`
         };
 
-        if (!this.cameraInfo.isOnvifCamera) {
+        if (!this.cameraInfo?.isOnvifCamera) {
             response.statusCode = 400;
             response.message = `This camera is not provisioned as an ONVIF supported camera`;
 
@@ -928,7 +909,7 @@ export class AvaCameraDevice {
 
             this.server.log([this.cameraInfo.cameraId, 'info'], `Starting ONVIF image capture...`);
 
-            const captureImageResult = await this.server.settings.app.iotCentralModule.invokeDirectMethod(
+            const captureImageResult = await this.iotCentralPluginModule.invokeDirectMethod(
                 this.onvifModuleId,
                 'GetSnapshot',
                 requestParams);
@@ -936,7 +917,7 @@ export class AvaCameraDevice {
             if (captureImageResult.status >= 200 && captureImageResult.status < 300) {
                 this.server.log([this.cameraInfo.cameraId, 'info'], `Image capture complete, uploading image data to blob storage...`);
 
-                const blobName = `${this.appScopeId}-${this.iotCentralModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`;
+                const blobName = `${this.appScopeId}-${this.iotCentralPluginModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`;
                 response.payload = await this.server.settings.app.blobStorage.uploadBase64ImageToBlobStorageContainer(captureImageResult.payload as string, blobName);
 
                 response.statusCode = 200;
@@ -976,7 +957,7 @@ export class AvaCameraDevice {
 
         let result = true;
 
-        if (!this.cameraInfo.isOnvifCamera) {
+        if (!this.cameraInfo?.isOnvifCamera) {
             this.server.log([this.cameraInfo.cameraId, 'error'], `This camera is not provisioned as an ONVIF supported camera`);
 
             return false;
@@ -989,7 +970,7 @@ export class AvaCameraDevice {
                 Password: this.cameraInfo.password
             };
 
-            const restartResult = await this.server.settings.app.iotCentralModule.invokeDirectMethod(
+            const restartResult = await this.iotCentralPluginModule.invokeDirectMethod(
                 this.onvifModuleId,
                 'Reboot',
                 requestParams);
@@ -1031,10 +1012,23 @@ export class AvaCameraDevice {
     }
 
     private async initializeAvaProcessor(avaPipelineTopologyName: string, avaLivePipelineName: string, mediaProfileToken: string): Promise<boolean> {
-        const getRtspStreamUrlResponse = await this.getOnvifRtspStreamUrl(mediaProfileToken);
-        if (getRtspStreamUrlResponse.statusCode !== 200) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `Error obtaining ONVIF RTSP streaming url`);
-            return false;
+        let rtspVideoStreamUrl;
+
+        if (!this.cameraInfo?.isOnvifCamera) {
+            rtspVideoStreamUrl = this.cameraInfo?.plainCameraInformation?.rtspVideoStream;
+            if (!rtspVideoStreamUrl) {
+                this.server.log([this.cameraInfo.cameraId, 'error'], `No RTSP streaming url was provided`);
+                return false;
+            }
+        }
+        else {
+            const getRtspStreamUrlResponse = await this.getOnvifRtspStreamUrl(mediaProfileToken);
+            if (getRtspStreamUrlResponse.statusCode !== 200) {
+                this.server.log([this.cameraInfo.cameraId, 'error'], `Error obtaining ONVIF RTSP streaming url`);
+                return false;
+            }
+
+            rtspVideoStreamUrl = getRtspStreamUrlResponse.payload;
         }
 
         const avaLivePipeline = await this.getPipelineContent(avaLivePipelineName);
@@ -1047,7 +1041,7 @@ export class AvaCameraDevice {
             return false;
         }
 
-        this.avaPipeline = new AvaPipeline(this.server, this.avaEdgeModuleId, this.cameraInfo, getRtspStreamUrlResponse.payload, avaPipelineTopology, avaLivePipeline);
+        this.avaPipeline = new AvaPipeline(this.server, this.cameraInfo, rtspVideoStreamUrl, avaPipelineTopology, avaLivePipeline);
         if (!this.avaPipeline) {
             this.server.log([this.cameraInfo.cameraId, 'error'], `Error creating AvaPipeline object: {${avaPipelineTopologyName}:${avaLivePipelineName}}`);
             return false;
@@ -1073,7 +1067,7 @@ export class AvaCameraDevice {
             return false;
         }
 
-        const avaRecordingAssetName = `${this.appScopeId}-${this.iotCentralModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`;
+        const avaRecordingAssetName = `${this.appScopeId}-${this.iotCentralPluginModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`;
         const startAvaPipelineResult = await this.avaPipeline.startAvaPipeline(avaRecordingAssetName);
 
         if (startAvaPipelineResult) {
@@ -1192,7 +1186,7 @@ export class AvaCameraDevice {
                         response.statusCode = 400;
                         response.message = `Missing required parameters for command ${commandRequest.methodName}`;
                     }
-                    else if (this.cameraInfo.isOnvifCamera && !this.currentMediaProfileToken) {
+                    else if (this.cameraInfo?.isOnvifCamera && !this.currentMediaProfileToken) {
                         response.statusCode = 400;
                         response.message = `No media profile token has been selected for the ${commandRequest.methodName}`;
                     }

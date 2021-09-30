@@ -1,5 +1,7 @@
 import { service, inject } from 'spryly';
 import { Server } from '@hapi/hapi';
+import { IIotCentralPluginModule } from 'src/plugins/iotCentralModule';
+import { IBlobStoragePluginOptions } from 'src/plugins/blobStorage';
 import { HealthState } from './health';
 import { AvaPipeline } from './avaPipeline';
 import {
@@ -33,7 +35,6 @@ import * as crypto from 'crypto';
 import * as Wreck from '@hapi/wreck';
 import { URL } from 'url';
 import { bind, emptyObj, forget, sleep } from '../utils';
-import { IBlobStoragePluginOptions } from 'src/plugins/blobStorage';
 
 const ModuleName = 'CameraGatewayService';
 const IotcOutputName = 'iotc';
@@ -47,7 +48,7 @@ export const PipelineCache = 'pipelines';
 
 type DeviceOperation = 'DELETE_CAMERA' | 'SEND_EVENT' | 'SEND_INFERENCES';
 
-interface IEnvConfig {
+export interface IModuleEnvironmentConfig {
     onvifModuleId: string;
     avaEdgeModuleId: string;
 }
@@ -203,11 +204,7 @@ export class CameraGatewayService {
     @inject('$server')
     private server: Server;
 
-    private envConfigInternal: IEnvConfig = {
-        onvifModuleId: process.env.onvifModuleId || '',
-        avaEdgeModuleId: process.env.avaEdgeModuleId || ''
-    };
-
+    private iotCentralPluginModule: IIotCentralPluginModule;
     private healthCheckRetries: number = defaultHealthCheckRetries;
     private healthState = HealthState.Good;
     private healthCheckFailStreak = 0;
@@ -224,12 +221,13 @@ export class CameraGatewayService {
         scopeId: ''
     };
 
-    public get envConfig(): IEnvConfig {
-        return this.envConfigInternal;
-    }
-
     public async init(): Promise<void> {
         this.server.log([ModuleName, 'info'], 'initialize');
+    }
+
+    @bind
+    public initializeModule(): void {
+        this.iotCentralPluginModule = this.server.settings.app.iotCentralPluginModule;
     }
 
     @bind
@@ -276,7 +274,7 @@ export class CameraGatewayService {
             }
 
             if (!emptyObj(patchedProperties)) {
-                await this.server.settings.app.iotCentralModule.updateModuleProperties(patchedProperties);
+                await this.iotCentralPluginModule.updateModuleProperties(patchedProperties);
             }
         }
         catch (ex) {
@@ -391,21 +389,21 @@ export class CameraGatewayService {
         await this.configureGateway(gatewayConfig);
 
         this.healthCheckRetries = Number(process.env.healthCheckRetries) || defaultHealthCheckRetries;
-        this.healthState = this.server.settings.app.iotCentralModule.getModuleClient() ? HealthState.Good : HealthState.Critical;
+        this.healthState = this.iotCentralPluginModule.moduleClient ? HealthState.Good : HealthState.Critical;
 
         const systemProperties = await this.getSystemProperties();
 
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmConfigureGateway, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmDiscoverOnvifCameras, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmGetCameraDevices, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmAddOnvifCameraDevice, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmAddCameraDevice, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmDeleteCameraDevice, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmRestartGatewayModule, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmClearDeviceCache, this.handleDirectMethod);
-        this.server.settings.app.iotCentralModule.addDirectMethod(AvaGatewayCapability.cmClearPipelineCache, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmConfigureGateway, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmDiscoverOnvifCameras, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmGetCameraDevices, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmAddOnvifCameraDevice, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmAddCameraDevice, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmDeleteCameraDevice, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmRestartGatewayModule, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmClearDeviceCache, this.handleDirectMethod);
+        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmClearPipelineCache, this.handleDirectMethod);
 
-        await this.server.settings.app.iotCentralModule.updateModuleProperties({
+        await this.iotCentralPluginModule.updateModuleProperties({
             [IotcEdgeHostDevicePropNames.ProcessorArchitecture]: osArch() || 'Unknown',
             [IotcEdgeHostDevicePropNames.Hostname]: osHostname() || 'Unknown',
             [IotcEdgeHostDevicePropNames.Platform]: osPlatform() || 'Unknown',
@@ -415,7 +413,7 @@ export class CameraGatewayService {
             [IotcEdgeHostDevicePropNames.SwVersion]: osVersion() || 'Unknown'
         });
 
-        await this.server.settings.app.iotCentralModule.sendMeasurement({
+        await this.iotCentralPluginModule.sendMeasurement({
             [AvaGatewayCapability.stIoTCentralClientState]: IoTCentralClientState.Connected,
             [AvaGatewayCapability.stModuleState]: ModuleState.Active,
             [AvaGatewayCapability.evModuleStarted]: 'Module initialization'
@@ -465,7 +463,7 @@ export class CameraGatewayService {
 
                 healthTelemetry[AvaGatewayCapability.tlSystemHeartbeat] = healthState;
 
-                await this.server.settings.app.iotCentralModule.sendMeasurement(healthTelemetry, IotcOutputName);
+                await this.iotCentralPluginModule.sendMeasurement(healthTelemetry, IotcOutputName);
             }
 
             this.healthState = healthState;
@@ -512,7 +510,7 @@ export class CameraGatewayService {
         };
 
         try {
-            await this.server.settings.app.iotCentralModule.sendMeasurement({
+            await this.iotCentralPluginModule.sendMeasurement({
                 [AvaGatewayCapability.evConfigureGateway]: ''
             });
 
@@ -566,7 +564,7 @@ export class CameraGatewayService {
 
         try {
             this.server.log([ModuleName, 'info'], 'Initiating Onvif camera discovery');
-            await this.server.settings.app.iotCentralModule.sendMeasurement({
+            await this.iotCentralPluginModule.sendMeasurement({
                 [AvaGatewayCapability.evCameraDiscoveryInitiated]: ''
             });
 
@@ -574,8 +572,8 @@ export class CameraGatewayService {
                 timeout: scanTimeout <= 0 || scanTimeout > 60 ? 5000 : scanTimeout * 1000
             };
 
-            const scanForCamerasResult = await this.server.settings.app.iotCentralModule.invokeDirectMethod(
-                this.envConfig.onvifModuleId,
+            const scanForCamerasResult = await this.iotCentralPluginModule.invokeDirectMethod(
+                this.server.settings.app.cameraGatewayPluginModule.moduleEnvironmentConfig.onvifModuleId,
                 'Discover',
                 requestParams);
 
@@ -601,7 +599,7 @@ export class CameraGatewayService {
             // }
 
             this.server.log([ModuleName, 'info'], 'Onvif camera discovery complete');
-            await this.server.settings.app.iotCentralModule.sendMeasurement({
+            await this.iotCentralPluginModule.sendMeasurement({
                 [AvaGatewayCapability.evCameraDiscoveryCompleted]: ''
             });
 
@@ -671,7 +669,7 @@ export class CameraGatewayService {
         this.server.log([ModuleName, 'info'], `restartModule`);
 
         try {
-            await this.server.settings.app.iotCentralModule.sendMeasurement({
+            await this.iotCentralPluginModule.sendMeasurement({
                 [AvaGatewayCapability.evModuleRestart]: reason,
                 [AvaGatewayCapability.stModuleState]: ModuleState.Inactive,
                 [AvaGatewayCapability.evModuleStopped]: 'Module restart'
@@ -730,7 +728,7 @@ export class CameraGatewayService {
                 return deviceProvisionResult;
             }
 
-            if (!cameraInfo.isOnvifCamera && !cameraInfo.plainCameraInformation?.rtspVideoStream) {
+            if (!cameraInfo?.isOnvifCamera && !cameraInfo?.plainCameraInformation?.rtspVideoStream) {
                 deviceProvisionResult.dpsProvisionStatus = false;
                 deviceProvisionResult.dpsProvisionMessage = `Missing RTSP video stream url for plain camera - skipping DPS provisioning`;
 
@@ -755,7 +753,7 @@ export class CameraGatewayService {
             if (deviceProvisionResult.dpsProvisionStatus && deviceProvisionResult.clientConnectionStatus) {
                 this.avaInferenceDeviceMap.set(cameraInfo.cameraId, deviceProvisionResult.avaInferenceDevice);
 
-                await this.server.settings.app.iotCentralModule.sendMeasurement({
+                await this.iotCentralPluginModule.sendMeasurement({
                     [AvaGatewayCapability.evCreateCamera]: cameraInfo.cameraId
                 }, IotcOutputName);
 
@@ -808,8 +806,8 @@ export class CameraGatewayService {
                 const provisioningPayload = {
                     iotcModelId: this.moduleConfig.avaOnvifCameraModelId,
                     iotcGateway: {
-                        iotcGatewayId: this.server.settings.app.iotCentralModule.deviceId,
-                        iotcModuleId: this.server.settings.app.iotCentralModule.moduleId
+                        iotcGatewayId: this.iotCentralPluginModule.deviceId,
+                        iotcModuleId: this.iotCentralPluginModule.moduleId
                     }
                 };
 
@@ -827,13 +825,7 @@ export class CameraGatewayService {
             deviceProvisionResult.dpsProvisionMessage = `IoT Central successfully provisioned device: ${cameraInfo.cameraId}`;
             deviceProvisionResult.dpsHubConnectionString = dpsConnectionString;
 
-            deviceProvisionResult.avaInferenceDevice = new AvaCameraDevice(
-                this.server,
-                this.envConfig.onvifModuleId,
-                this.envConfig.avaEdgeModuleId,
-                this.moduleConfig.scopeId,
-                cameraInfo
-            );
+            deviceProvisionResult.avaInferenceDevice = new AvaCameraDevice(this.server, this.moduleConfig.scopeId, cameraInfo);
 
             const { clientConnectionStatus, clientConnectionMessage } = await deviceProvisionResult.avaInferenceDevice.connectDeviceClient(deviceProvisionResult.dpsHubConnectionString);
 
@@ -889,7 +881,7 @@ export class CameraGatewayService {
                         json: true
                     });
 
-                await this.server.settings.app.iotCentralModule.sendMeasurement({
+                await this.iotCentralPluginModule.sendMeasurement({
                     [AvaGatewayCapability.evDeleteCamera]: cameraId
                 }, IotcOutputName);
 
