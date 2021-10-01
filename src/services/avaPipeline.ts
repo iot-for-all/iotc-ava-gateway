@@ -51,8 +51,8 @@ export class AvaPipeline {
 
     constructor(server: Server, cameraInfo: ICameraProvisionInfo, rtspUrl: string, avaPipelineTopology: any, avaLivePipeline: any) {
         this.server = server;
-        this.iotCentralPluginModule = server.settings.app.iotCentralPluginModule;
-        this.avaEdgeModuleId = this.server.settings.app.cameraGatewayPluginModule.moduleEnvironmentConfig.avaEdgeModuleId;
+        this.iotCentralPluginModule = server.settings.app.iotCentral;
+        this.avaEdgeModuleId = this.server.settings.app.cameraGateway.moduleEnvironmentConfig.avaEdgeModuleId;
         this.cameraInfo = cameraInfo;
         this.rtspUrlInternal = rtspUrl;
         this.avaPipelineTopologyInternal = avaPipelineTopology;

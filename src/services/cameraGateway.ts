@@ -1,7 +1,7 @@
 import { service, inject } from 'spryly';
 import { Server } from '@hapi/hapi';
 import { IIotCentralPluginModule } from 'src/plugins/iotCentralModule';
-import { IBlobStoragePluginOptions } from 'src/plugins/blobStorage';
+import { IBlobStoragePluginModuleOptions } from 'src/plugins/blobStorage';
 import { HealthState } from './health';
 import { AvaPipeline } from './avaPipeline';
 import {
@@ -131,7 +131,7 @@ enum ModuleState {
 
 interface IConfigureGatewayCommandRequestParmas {
     moduleConfig: IModuleConfig;
-    blobStorage: IBlobStoragePluginOptions;
+    blobStorage: IBlobStoragePluginModuleOptions;
 }
 
 interface IDiscoverCamerasCommandRequestParams {
@@ -227,7 +227,7 @@ export class CameraGatewayService {
 
     @bind
     public initializeModule(): void {
-        this.iotCentralPluginModule = this.server.settings.app.iotCentralPluginModule;
+        this.iotCentralPluginModule = this.server.settings.app.iotCentral;
     }
 
     @bind
@@ -444,6 +444,10 @@ export class CameraGatewayService {
 
     @bind
     public async getHealth(): Promise<HealthState> {
+        if (!this.iotCentralPluginModule) {
+            return this.healthState;
+        }
+
         let healthState = this.healthState;
 
         try {
@@ -518,10 +522,7 @@ export class CameraGatewayService {
                 || !gatewayConfiguration?.moduleConfig?.appBaseDomain
                 || !gatewayConfiguration?.moduleConfig?.apiToken
                 || !gatewayConfiguration?.moduleConfig?.deviceKey
-                || !gatewayConfiguration?.moduleConfig?.scopeId
-                || !gatewayConfiguration?.blobStorage?.blobConnectionString
-                || !gatewayConfiguration?.blobStorage?.blobPipelineContainer
-                || !gatewayConfiguration?.blobStorage?.blobImageCaptureContainer) {
+                || !gatewayConfiguration?.moduleConfig?.scopeId) {
 
                 response.statusCode = 400;
                 response.message = `Required gateway configuration parameters are missing`;
@@ -535,12 +536,28 @@ export class CameraGatewayService {
                     ...gatewayConfiguration.moduleConfig
                 };
 
+                const blobStorageConfig = {
+                    blobConnectionString: gatewayConfiguration?.blobStorage?.blobConnectionString || '',
+                    blobPipelineContainer: gatewayConfiguration?.blobStorage?.blobPipelineContainer || '',
+                    blobImageCaptureContainer: gatewayConfiguration?.blobStorage?.blobImageCaptureContainer || ''
+                };
+
+                if (blobStorageConfig.blobConnectionString
+                    && blobStorageConfig.blobPipelineContainer
+                    && blobStorageConfig.blobImageCaptureContainer) {
+
+                    if (!(await this.server.settings.app.blobStorage.configureBlobStorageClient(blobStorageConfig))) {
+                        this.server.log([ModuleName, 'error'], `An error occurred while trying to configure the blob storage client`);
+                    }
+                }
+                else {
+                    this.server.log([ModuleName, 'info'], `All optional blob storage configuration values were not found`);
+                }
+
                 await this.server.settings.app.config.set(GatewayConfig, {
                     moduleConfig: this.moduleConfig,
-                    blobStorage: gatewayConfiguration.blobStorage
+                    blobStorage: blobStorageConfig
                 });
-
-                await this.server.settings.app.blobStorage.configureBlobStorageClient(gatewayConfiguration.blobStorage);
             }
         }
         catch (ex) {
@@ -573,7 +590,7 @@ export class CameraGatewayService {
             };
 
             const scanForCamerasResult = await this.iotCentralPluginModule.invokeDirectMethod(
-                this.server.settings.app.cameraGatewayPluginModule.moduleEnvironmentConfig.onvifModuleId,
+                this.server.settings.app.cameraGateway.moduleEnvironmentConfig.onvifModuleId,
                 'Discover',
                 requestParams);
 
@@ -913,7 +930,7 @@ export class CameraGatewayService {
 
         try {
             const deviceCache = await this.server.settings.app.config.get(DeviceCache);
-            const cachedDeviceList: IDeviceCacheInfo[] = deviceCache.cache || [];
+            const cachedDeviceList: IDeviceCacheInfo[] = deviceCache?.cache || [];
 
             this.server.log([ModuleName, 'info'], `Found ${cachedDeviceList.length} cached devices`);
             if (this.debugTelemetry()) {
@@ -962,7 +979,7 @@ export class CameraGatewayService {
     private async updateCachedDeviceInfo(operation: DeviceCacheOperation, cameraId: string, cacheProvisionInfo?: IDeviceCacheInfo): Promise<void> {
         try {
             const deviceCache = await this.server.settings.app.config.get(DeviceCache);
-            const cachedDeviceList: IDeviceCacheInfo[] = deviceCache.cache || [];
+            const cachedDeviceList: IDeviceCacheInfo[] = deviceCache?.cache || [];
             const cachedDeviceIndex = cachedDeviceList.findIndex((element) => element.cameraInfo.cameraId === cameraId);
 
             switch (operation) {

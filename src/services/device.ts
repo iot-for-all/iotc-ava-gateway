@@ -209,8 +209,8 @@ export class AvaCameraDevice {
         cameraInfo: ICameraProvisionInfo
     ) {
         this.server = server;
-        this.iotCentralPluginModule = server.settings.app.iotCentralPluginModule;
-        this.onvifModuleId = this.server.settings.app.cameraGatewayPluginModule.moduleEnvironmentConfig.onvifModuleId;
+        this.iotCentralPluginModule = server.settings.app.iotCentral;
+        this.onvifModuleId = this.server.settings.app.cameraGateway.moduleEnvironmentConfig.onvifModuleId;
         this.appScopeId = appScopeId;
         this.cameraInfo = cameraInfo;
     }
@@ -439,7 +439,7 @@ export class AvaCameraDevice {
     }
 
     private async deviceReady(): Promise<void> {
-        this.server.log([this.cameraInfo.cameraId, 'info'], `Device is ready`);
+        this.server.log([this.cameraInfo.cameraId, 'info'], `Device (${this.cameraInfo.cameraId}) is ready`);
 
         await this.getCameraProperties();
 
@@ -677,7 +677,7 @@ export class AvaCameraDevice {
 
             await this.deviceClient.open();
 
-            this.server.log([this.cameraInfo.cameraId, 'info'], `Device client is connected`);
+            this.server.log([this.cameraInfo.cameraId, 'info'], `Device (${this.cameraInfo.cameraId}) client is connected`);
 
             this.deviceTwin = await this.deviceClient.getTwin();
             this.deviceTwin.on('properties.desired', this.onHandleDeviceProperties);
@@ -804,7 +804,7 @@ export class AvaCameraDevice {
                     Password: this.cameraInfo.password
                 });
 
-            response.payload = (mediaProfileResult.payload || []).map((item) => {
+            response.payload = (mediaProfileResult?.payload || []).map((item) => {
                 return {
                     mediaProfileName: item.MediaProfileName,
                     mediaProfileToken: item.MediaProfileToken
@@ -846,7 +846,7 @@ export class AvaCameraDevice {
         }
         catch (ex) {
             response.statusCode = 500;
-            response.message = `Error getting ONVIF device media profiles: ${ex.message}`;
+            response.message = `Error setting ONVIF device media profile: ${ex.message}`;
 
             this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
@@ -920,8 +920,8 @@ export class AvaCameraDevice {
                 const blobName = `${this.appScopeId}-${this.iotCentralPluginModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`;
                 response.payload = await this.server.settings.app.blobStorage.uploadBase64ImageToBlobStorageContainer(captureImageResult.payload as string, blobName);
 
-                response.statusCode = 200;
-                response.message = `Image capture completed successfully`;
+                response.statusCode = response.payload ? 200 : 400;
+                response.message = response.payload ? `Image upload completed successfully` : `The image was not uploaded to the storage service`;
 
                 this.server.log([this.cameraInfo.cameraId, 'info'], response.message);
             }
@@ -996,8 +996,8 @@ export class AvaCameraDevice {
 
         if (!avaPipelineContent || emptyObj(avaPipelineContent)) {
             this.server.log([this.cameraInfo.cameraId, 'info'], `Pipeline content named: ${contentName} not found in cache. Downloading from blob store...`);
-            avaPipelineContent = await this.server.settings.app.blobStorage.getFileFromBlobStorage(`${contentName}.json`);
 
+            avaPipelineContent = await this.server.settings.app.blobStorage.getFileFromBlobStorage(`${contentName}.json`);
             if (!avaPipelineContent) {
                 this.server.log([this.cameraInfo.cameraId, 'error'], `Could not retrieve pipeline content named: ${contentName}`);
                 return;

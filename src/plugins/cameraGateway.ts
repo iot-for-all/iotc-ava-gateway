@@ -1,6 +1,10 @@
 import { HapiPlugin, inject } from 'spryly';
 import { Server } from '@hapi/hapi';
-import { iotCentralModulePlugin } from './iotCentralModule';
+import {
+    IIotCentralPluginModuleOptions,
+    iotCentralPluginModule
+} from './iotCentralModule';
+import { blobStoragePluginModule } from './blobStorage';
 import {
     IModuleEnvironmentConfig,
     CameraGatewayService
@@ -9,11 +13,11 @@ import * as _get from 'lodash.get';
 
 declare module '@hapi/hapi' {
     interface ServerOptionsApp {
-        cameraGatewayPluginModule?: ICameraGatewayPluginModule;
+        cameraGateway?: ICameraGatewayPluginModule;
     }
 }
 
-const ModuleName = 'CameraGatewayPlugin';
+const ModuleName = 'CameraGatewayPluginModule';
 
 export interface ICameraGatewayPluginModule {
     moduleEnvironmentConfig: IModuleEnvironmentConfig;
@@ -35,23 +39,26 @@ export class CameraGatewayPlugin implements HapiPlugin {
         server.log([ModuleName, 'info'], 'register');
 
         try {
+            server.settings.app.cameraGateway = new CameraGatewayPluginModule();
+
+            const pluginOptions: IIotCentralPluginModuleOptions = {
+                initializeModule: this.cameraGateway.initializeModule.bind(this.cameraGateway),
+                debugTelemetry: this.cameraGateway.debugTelemetry.bind(this.cameraGateway),
+                onHandleModuleProperties: this.cameraGateway.onHandleModuleProperties.bind(this.cameraGateway),
+                onModuleClientError: this.cameraGateway.onModuleClientError.bind(this.cameraGateway),
+                onHandleDownstreamMessages: this.cameraGateway.onHandleDownstreamMessages.bind(this.cameraGateway),
+                onModuleReady: this.cameraGateway.onModuleReady.bind(this.cameraGateway)
+            };
+
             await server.register([
                 {
-                    plugin: iotCentralModulePlugin,
-                    options: {
-                        initializeModule: this.cameraGateway.initializeModule.bind(this.cameraGateway),
-                        debugTelemetry: this.cameraGateway.debugTelemetry.bind(this.cameraGateway),
-                        onHandleModuleProperties: this.cameraGateway.onHandleModuleProperties.bind(this.cameraGateway),
-                        onModuleClientError: this.cameraGateway.onModuleClientError.bind(this.cameraGateway),
-                        onHandleDownstreamMessages: this.cameraGateway.onHandleDownstreamMessages.bind(this.cameraGateway),
-                        onModuleReady: this.cameraGateway.onModuleReady.bind(this.cameraGateway)
-                    }
+                    plugin: iotCentralPluginModule,
+                    options: pluginOptions
+                },
+                {
+                    plugin: blobStoragePluginModule
                 }
             ]);
-
-            const plugin = new CameraGatewayPluginModule();
-
-            server.settings.app.cameraGatewayPluginModule = plugin;
         }
         catch (ex) {
             server.log([ModuleName, 'error'], `Error while registering : ${ex.message}`);

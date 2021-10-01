@@ -5,11 +5,12 @@ const fse = require('fs-extra');
 const { Command } = require('commander');
 
 const programArgs = new Command()
+    .option('-c, --config-file <configFile>', 'Build config file')
     .option('-b, --docker-build', 'Docker build the image')
+    .option('-d, --debug', 'Use debug build options')
     .option('-p, --docker-push', 'Docker push the image')
     .option('-r, --workspace-root <workspaceRoot>', 'Workspace root folder path')
     .option('-v, --image-version <version>', 'Docker image version override')
-    .option('-d, --debug', 'Use debug build options')
     .parse(process.argv);
 const programOptions = programArgs.opts();
 
@@ -46,7 +47,8 @@ async function start() {
     let buildFailed = false;
 
     try {
-        const imageConfigFilePath = path.resolve(workspaceRootFolder, `configs/imageConfig.json`);
+        const configFile = programOptions.configFile || `imageConfig.json`;
+        const imageConfigFilePath = path.resolve(workspaceRootFolder, `configs`, configFile);
         const imageConfig = fse.readJSONSync(imageConfigFilePath);
         const dockerVersion = imageConfig.versionTag || process.env.npm_package_version || programOptions.imageVersion || 'latest';
         const dockerArch = `${imageConfig.arch}${programOptions.debug ? '-debug' : ''}` || '';

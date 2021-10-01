@@ -2,7 +2,7 @@
     "modulesContent": {
         "$edgeAgent": {
             "properties.desired": {
-                "schemaVersion": "1.2",
+                "schemaVersion": "1.1",
                 "runtime": {
                     "type": "docker",
                     "settings": {
@@ -40,6 +40,17 @@
                         "version": "1.0",
                         "startupOrder": 1
                     },
+                    "OnvifModule": {
+                        "settings": {
+                            "image": "mcr.microsoft.com/cameraplatform/ipcamedgemodule",
+                            "createOptions": "{\"HostConfig\":{\"NetworkMode\":\"host\"},\"NetworkingConfig\":{\"EndpointsConfig\":{\"host\":{}}}}"
+                        },
+                        "type": "docker",
+                        "status": "running",
+                        "restartPolicy": "always",
+                        "version": "1.0",
+                        "startupOrder": 2
+                    },
                     "avaYolov3": {
                         "settings": {
                             "image": "mcr.microsoft.com/lva-utilities/yolov3-onnx:1.0"
@@ -48,7 +59,7 @@
                         "status": "running",
                         "restartPolicy": "always",
                         "version": "1.0",
-                        "startupOrder": 2
+                        "startupOrder": 3
                     },
                     "avaEdge": {
                         "settings": {
@@ -64,7 +75,7 @@
                         "status": "running",
                         "restartPolicy": "always",
                         "version": "1.0",
-                        "startupOrder": 3
+                        "startupOrder": 4
                     },
                     "AvaEdgeGatewayModule": {
                         "settings": {
@@ -85,8 +96,8 @@
                         },
                         "status": "running",
                         "restartPolicy": "always",
-                        "startupOrder": 4,
-                        "version": "1.0"
+                        "version": "1.0",
+                        "startupOrder": 5
                     }
                 }
             }

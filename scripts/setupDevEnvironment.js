@@ -57,9 +57,9 @@ function start() {
         const setupDirSrc = path.resolve(workspaceRootFolder, `setup`);
         const configDirDst = path.resolve(workspaceRootFolder, `configs`);
 
-        createDevConfigurationFile(path.resolve(setupDirSrc, `imageConfig.json`), configDirDst, path.resolve(configDirDst, `imageConfig.json`));
-        createDevConfigurationFolder(path.resolve(setupDirSrc, `mediaPipelines`), path.resolve(configDirDst, `mediaPipelines`));
         createDevConfigurationFolder(path.resolve(setupDirSrc, `deploymentManifests`), path.resolve(configDirDst, `deploymentManifests`));
+        createDevConfigurationFolder(path.resolve(setupDirSrc, `mediaPipelines`), path.resolve(configDirDst, `mediaPipelines`));
+        createDevConfigurationFile(path.resolve(setupDirSrc, `imageConfig.json`), configDirDst, path.resolve(configDirDst, `imageConfig.json`));
     } catch (e) {
         setupFailed = true;
     } finally {
