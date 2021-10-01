@@ -54,8 +54,7 @@ export interface IModuleEnvironmentConfig {
 }
 
 interface IModuleConfig {
-    appSubDomain: string;
-    appBaseDomain: string;
+    appHostUri: string;
     apiToken: string;
     deviceKey: string;
     scopeId: string;
@@ -214,8 +213,7 @@ export class CameraGatewayService {
     };
     private avaInferenceDeviceMap = new Map<string, AvaCameraDevice>();
     private moduleConfig: IModuleConfig = {
-        appSubDomain: '',
-        appBaseDomain: '',
+        appHostUri: '',
         apiToken: '',
         deviceKey: '',
         scopeId: ''
@@ -496,12 +494,11 @@ export class CameraGatewayService {
 
     private checkModuleConfig(): { result: boolean; message: string } {
         return {
-            result: !!(this.moduleConfig.appSubDomain
-                && this.moduleConfig.appBaseDomain
+            result: !!(this.moduleConfig.appHostUri
                 && this.moduleConfig.apiToken
                 && this.moduleConfig.deviceKey
                 && this.moduleConfig.scopeId),
-            message: `Missing required module configuration parameters (appSubDomain, appBaseDomain, apiToken, deviceKey, scopeId)`
+            message: `Missing required module configuration parameters (appHostUri, apiToken, deviceKey, scopeId)`
         };
     }
 
@@ -518,8 +515,7 @@ export class CameraGatewayService {
                 [AvaGatewayCapability.evConfigureGateway]: ''
             });
 
-            if (!gatewayConfiguration?.moduleConfig?.appSubDomain
-                || !gatewayConfiguration?.moduleConfig?.appBaseDomain
+            if (!gatewayConfiguration?.moduleConfig?.appHostUri
                 || !gatewayConfiguration?.moduleConfig?.apiToken
                 || !gatewayConfiguration?.moduleConfig?.deviceKey
                 || !gatewayConfiguration?.moduleConfig?.scopeId) {
@@ -889,7 +885,7 @@ export class CameraGatewayService {
             this.server.log([ModuleName, 'info'], `Deleting IoT Central device instance: ${cameraId}`);
             try {
                 await this.iotcApiRequest(
-                    `https://${this.moduleConfig.appSubDomain}.${this.moduleConfig.appBaseDomain}/api/preview/devices/${cameraId}`,
+                    `https://${this.moduleConfig.appHostUri}/api/preview/devices/${cameraId}`,
                     'delete',
                     {
                         headers: {

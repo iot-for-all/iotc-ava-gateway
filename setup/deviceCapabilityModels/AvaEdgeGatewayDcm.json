@@ -375,18 +375,10 @@
                                     "fields": [
                                         {
                                             "displayName": {
-                                                "en": "appSubDomain"
+                                                "en": "appHostUri"
                                             },
-                                            "comment": "The subdomain that identifies your app. Ex. {appsubdomain}.azureiotcentral.com",
+                                            "comment": "The host uri that identifies your app. Ex. [yourapp.azureiotcentral.com]",
                                             "name": "appSubDomain",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "appBaseDomain"
-                                            },
-                                            "comment": "The base domain your app uses. Ex. appsubdomain.{basedomain.com}",
-                                            "name": "appBaseDomain",
                                             "schema": "string"
                                         },
                                         {

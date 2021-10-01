@@ -23,13 +23,9 @@ Next, you should create an Azure IoT Central application to use as your device m
 ### Gather in the information needed for API access to your IoT Central app
 In order for the IoT Edge module to access the APIs necessary to provision and register devices in the IoT Central application we will need to gather some information. Copy these values down in a safe place for use later in the tutorial.
 
-#### App Subdomain
-When you create your IoT Central application, this is the name you give it.  
-<img src="./media/appsubdomain.png" width="40%" alt="App Subdomain" />
-
-#### App Basedomain
-This is the host portion of the main app url, usually azureiotcentral.com.  
-<img src="./media/appbasedomain.png" width="40%" alt="App Basedomain" />
+#### App Host Uri
+When you create your IoT Central application you will specify a name. The name combined with the base uri will be your App Host Uri - Ex. [yourapp.azureiotcentral.com]. Copy this value.  
+<img src="./media/apphosturi.png" width="40%" alt="App Subdomain" />
 
 #### Api Token
 In your IoT Central application select Administration from the left pane, then select API tokens. You will see an option at the top of the window to create a new API token. Create a new token using the Operator role. Copy the value of the API token for use later.  
