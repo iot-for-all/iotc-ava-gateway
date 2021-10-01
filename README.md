@@ -1,24 +1,26 @@
 # Azure IoT Central gateway module for Azure Video Analyzer
-This sample demonstrates how to use Azure IoT Central to ingest AI inferencing from intelligent video cameras managed by Azure Video Analyer on the edge. The sample includes a custom Azure IoT Edge gateway module and deployment manifest to deploy all the necessary components to create intelligent camera devices.
+This sample demonstrates how to use Azure IoT Central to collect AI inferencing from intelligent video cameras using the Azure Video Analyer Edge module. This sample includes a custom Azure IoT Edge gateway module for IoT Central and a deployment manifest configured to deploy all the necessary components to create intelligent camera devices using the Azure Video Analyzer Edge module.
 
 The full documentation for IoT Central support for Azure IoT Edge devices can be found at [Connect Azure IoT Edge devices to an Azure IoT Central application](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-iot-edge)
 
 The full documentation for Azure Video Analyzer can be found at [What is Azure Video Analyzer?](https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/overview)
 
-The following Azure Video Analyzer documentation can be used as a guide: [Quickstart: Analyze live video with your own model - HTTP](https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/analyze-live-video-use-your-model-http?pivots=programming-language-csharp), which shows you how to use Azure Video Analyzer to analyze the live video feed from a simulated IP camera and detect objects. The steps below will callout how to adapt IoT Central into the quickstart instead of using IoT Hub directly.
+The following Azure Video Analyzer documentation can be used as primer to understand how Azure Video Analyzer is configured for Azure IoT Edge deployments: [Quickstart: Analyze live video with your own model - HTTP](https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/analyze-live-video-use-your-model-http?pivots=programming-language-csharp). The documentation is specific to Azure IoT Hub deployments and will deploy extra resources that are not needed for IoT Central, just ignore the extra resources for the purposes of this guide.
 
-A quick note about the documentation and the differences between using IoT Hub vs. IoT Central. IoT Central is a managed application platform as a service. IoT Central is built on top of the Azure IoT platform using underlying IoT Hubs. IoT Central does not allow direct access to the underlying IoT Hub resources (e.g. via a connection string) because these are managed for you and may change based on scale, migration, fail-over, and other scenarios. Instead, devices are created via SAS keys, Certificates, or other methods using a managed instance of the [IoT Hub Device Provisioning Service](https://docs.microsoft.com/en-us/azure/iot-dps/about-iot-dps) to allow provisioning to the right IoT Hub in a scalable manner. This is all done using features provided by the IoT Central application.
+A quick note about the differences between using IoT Hub vs. IoT Central. IoT Central is a managed application platform as a service. IoT Central is built on top of the Azure IoT platform using underlying IoT Hubs. IoT Central does not allow direct access to the underlying IoT Hub resources (e.g. via a connection string) because these are managed for you and may change based on scale, migration, fail-over, and other scenarios. Instead, devices are created via SAS keys, Certificates, or other methods using a managed instance of the [IoT Hub Device Provisioning Service](https://docs.microsoft.com/en-us/azure/iot-dps/about-iot-dps) (also managed by IoT Central) to allow provisioning to the right IoT Hub in a scalable manner. This is all done using features provided by the IoT Central application.
 
-Start the tutorial linked above up to the section "Set up your development environment". At this point you should have created an Azure Video Analyzer account with an associated Azure Storage Account and an Azure Virtual Machine to act as your simulated IoT edge network and device. The deployment in the tutorial also creates an Azure IoT Hub, but we will ignore that resource for the purposes of this tutorial.
+After going through the Azure Video Analyzer quickstart linked above you should have created an Azure Video Analyzer account with associated resources including Azure Storage Account, Managed Identity, IoT Hub, and an Azure Virtual Machine to act as your simulated IoT edge network and device. The steps that follow in this guide will only need the Azure Video Analyzer account, storage account, and managed identity.
 
 ## Create an Azure Video Analyzer account
- * This will create associated Azure resources including a storage account and user-assigned managed identity
- * Save the Video Analyzer Edge Module access token
+You should have already done this by following the Azure Video Analyzer quickstart linked above. From the [Azure Portal](https://portal.azure.com) you should be able to access your Azure Video Analyzer account.
+
+View your Azure Video Analyzer account now and select Edge Modules from the left pane. You should see an edge module created from the quickstart earlier, if not you can create a new one. Select Generate token on the right side of the window and copy this value in a safe place to use later in the tutorial.
+<img src="./media/avaedgemodule.png" alt="AVA Edge Module" />
 
 ## Create an Azure IoT Central Application
-Next, you should create an Azure IoT Central application to use as your device management and data ingestions platform. Follow the instructions in the [Create an IoT Central application guide](https://docs.microsoft.com/en-us/azure/iot-central/core/howto-create-iot-central-application#azure-iot-central-site) to create a new IoT Central application using the custom app option. Select the appropriate plan for your needs.
+Next, you should create an Azure IoT Central application to use as your device management and data ingestions platform. Follow the instructions in the [Create an IoT Central application guide](https://docs.microsoft.com/en-us/azure/iot-central/core/howto-create-iot-central-application#azure-iot-central-site) to create a new IoT Central application using the Custom app option. Select the appropriate plan for your needs.
 
-## Gather in the information needed for API access to your IoT Central app
+### Gather in the information needed for API access to your IoT Central app
 In order for the IoT Edge module to access the APIs necessary to provision and register devices in the IoT Central application we will need to gather some information. Copy these values down in a safe place for use later in the tutorial.
 
 #### App Subdomain
@@ -38,10 +40,10 @@ Select Administration from the left pane, then select Device connection. Next, s
 <img src="./media/deviceconnection.png" alt="Device Connection" />
 <img src="./media/devicekeyscopeid.png" alt="Device Key" />
 
-## Import the IoT Central device capability models for the camera device and for the gateway module
+### Import the IoT Central device capability models for the camera device and for the gateway module
 IoT Central uses capability models to describe what kind of data the devices will send (Telemetry, State, Events, and Properties) as well as what kind of commands (Direct Methods) the devices support. This gives IoT Central insight into how to support the devices and how to reason over the ingested data - e.g. rules, relationships, visualizations, and data export formats.
 
-### Import the Device Model
+#### Import the Device Model
 Select Device templates from the left pane. Select the new option to create a new template:  
 <img src="./media/newiotdevicetemplate.png" alt="New Device Template" />
 
@@ -60,7 +62,7 @@ Now select the Import a model option:
 When asked, navigate in your repository to the `./setup/deviceCapabilityModels/AvaOnvifCameraDeviceDcm.json` file and select open. At this point the model should be displayed with all of the interfaces describing the device's capabilities. Now publish the model by selecting the publish option at the top of the window:  
 <img src="./media/avaonvifcameramodel.png" alt="Onvif Camera Model" />
 
-### Import the Edge Gateway Model
+#### Import the Edge Gateway Model
 We will use the same steps to import the gateway model. One extra step will be to associate the device model with the gateway. This establishes the relationship between the gateway module that we will deploy and the leaf devices (downstream devices) that it will create.
 
 Select Device templates from the left pane. Select the new option to create a new template:  
@@ -89,7 +91,7 @@ Name the device relationship and select the device model that we published in th
 
 Now we are almost ready to publish this template, but first we have to add an edge deployment manifest.
 
-### Attach the Edge Deployment Manifest
+## Attach the Edge Deployment Manifest
  * select edit manifest - you should see the manifest display screen [editmanifest.png]
  * select edit or import manifest - navigate to ./setup/deploymentManifests/quickstart [replacemanifest.png]
  * you should now see your manifest displayed [displaymanifest.png]
