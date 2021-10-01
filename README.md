@@ -25,15 +25,15 @@ In order for the IoT Edge module to access the APIs necessary to provision and r
 
 #### App Host Uri
 When you create your IoT Central application you will specify a name. The name combined with the base uri will be your App Host Uri. Copy this value.  
-##### Example:  
-<img src="./media/apphosturi.png" width="40%" alt="App Subdomain" />
+##### Example:
+<img src="./media/apphosturi.png" width="40%" alt="App Host Uri" />
 
 #### Api Token
 In your IoT Central application select Administration from the left pane, then select API tokens. You will see an option at the top of the window to create a new API token. Create a new token using the Operator role. Copy the value of the API token for use later.  
 <img src="./media/apitoken.png" alt="API Token" />
 
 #### Device Key and Scope Id
-Select Administration from the left pane, then select Device connection. Next, select the SAS-IoT-Devices link to reveal the Shared access signature Primary key used to create device provisioning keys. Copy the Primary key and Scope id for use later.  
+Select Administration from the left pane, then select Device connection. Next, select the SAS-IoT-Devices link to reveal the enrollment group Shared access signature Primary key used to create device provisioning keys. Copy the Primary key and Scope id for use later.  
 <img src="./media/deviceconnection.png" alt="Device Connection" />
 <img src="./media/devicekeyscopeid.png" alt="Device Key" />
 
@@ -86,19 +86,74 @@ Now we need to add a relationship between the gateway and leaf devices that it c
 Name the device relationship and select the device model that we published in the previous steps and then save it:  
 <img src="./media/edgegatewaydevicerelationship.png" alt="Add Relationship" />
 
-Now we are almost ready to publish this template, but first we have to add an edge deployment manifest.
+Now we are almost ready to publish this template, but first we have need to add an edge deployment manifest to our edge gateway model.
 
-## Attach the Edge Deployment Manifest
- * select edit manifest - you should see the manifest display screen [editmanifest.png]
- * select edit or import manifest - navigate to ./setup/deploymentManifests/quickstart [replacemanifest.png]
- * you should now see your manifest displayed [displaymanifest.png]
+### Create the Edge Deployment Manifest
+ * In your cloned project repository folder you should have a `./configs` sub-folder which contains editable copies of the contents of the `./setup` folder. For this guide we will use the deployment manifest located at `./configs/deploymentManifests/deployment.quickstart.amd64.json`. The only value we should need to add to this file is the Azure Video Analytics account Edge Module access token that you saved earlier in this guide. Copy that value to the deployment manifest:  
+ <img src="./media/avaedgemoduletoken.png" alt="AVA Edge Module Token" />
+ * Back in your IoT Central application select edit manifest from where we left off at the AVA Edge Gateway template screen:  
+ <img src="./media/editmanifest.png" alt="Edit Gateway Manifest" />
+ * Select the replace it with a new file option and open deployment template you just edited:  
+ <img src="./media/replacemanifest.png" alt="Replace Gateway Manifest" />
+ * You should see your manifest displayed, including the change to include the Azure Video Analyzer Edge module access token. If everything looks good, select the Save option:  
+ <img src="./media/displaymanifest.png" alt="Display Gateway Manifest" />
+ * Select the Publish option to publish the completed gateway model template:  
+ <img src="./media/publishgatewaymodel.png" alt="Publish Gateway Model" />
+
+ At this point you have completed the steps define a gateway edge device template in IoT Central that includes an IoT Edge deployment manifest. This deployment manifest defines which modules the IoT Edge runtime should download onto the edge device, including where to get the modules and how the modules route messages between them and ultimately up to the cloud IoT Hub instance managed inside IoT Central.
+
+ The next step will be to create an IoT Edge device that is configured to register itself with our IoT Central application. Once that is done, the deployment manifest will begin downloading the modules to the edge device and the entire solution will begin operating.
 
 ## Create an IoT Edge Device
- * Install the latest version 1.2
- * Configure the config.toml file "DPS provisioning with symmetric key" section. Provide the values for:
-   * id_scope
-   * registration_id (the device id in IoT Central)
-   * symmetric_key
+The full documentation describing how to install Azure IoT Edge on a device can be found at [Install or uninstall Azure IoT Edge for Linux](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-edge?view=iotedge-2020-11). This documentation is specific to the Linux operating system but the Azure IoT Edge documentation online has instructions for other operating systems as well as the caveats regarding version and feature support on each operating system. For the purposes of this guide we will assume an AMD64/x64 device running the Linux Ubuntu version 20.x operating system. See the specific [instructions on how to install the Ubuntu operation system](https://ubuntu.com/tutorials/install-ubuntu-desktop#1-overview) on hardware that you would like to use as your Azure IoT Edge device.
+
+> NOTE: In the Azure Video Analytics quickstart linked at the beginning of this guide you created an Azure VM with the Azure IoT Edge runtime installed on it. Feel free to use that Virtual Machine resource; however, you will need to first [upgrade the Azure IoT Edge runtime to version 1.2](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-update-iot-edge?view=iotedge-2020-11&tabs=linux).
+
+### In your IoT Central app create a new gateway device
+Select Devices in the left pane, then select the AVA Edge Gateway model to the right, then select New at the top of the window:  
+<img src="./media/newgatewaydevice.png" alt="Add New Gateway Device" />
+
+Give the new device a name and device id, then select the Create button at the bottom of the window:  
+<img src="./media/createnewgatewaydevice.png" width="50%" alt="Create New Gateway Device" />
+
+By creating a new device using the AVA Edge Gateway model this device instance will take on all of the capability of the model definition, including specifically the edge deployment manifest that we included earlier. You should see the new device in your device list:  
+<img src="./media/gatewaydeviceregistered.png" alt="Registered Gateway Device" />
+
+Notice that the Device statis is currently set to **Registered**. This means that the device is configured in the cloud. Specifically, it is registered in the Device enrollment group for edge devices managed by IoT Central. This scenario is what is called "cloud first provisioning".
+
+Select the gateway device to view its details screen, then select the Connect option at the top of the window:  
+<img src="./media/gatewaydeviceconnect.png" alt="Gateway Device Connect" />
+
+This will display the device connection information. We will need to gather three pieces of information to use to provision the IoT Edge device as this cloud created device:  
+  1. ID scope (to be used as id_scope in the IoT Edge configuration)
+  1. Device ID (to be used as registration_id in the IoT Edge configuration)
+  1. Primary key (to be used as symmetric_key in the IoT Edge configuration)
+
+Copy these values to be used in the next section:  
+<img src="./media/gatewaydeviceconnection.png" width="50%" alt="Gateway Device Connection Information" />
+
+### Provision the IoT Edge device with its cloud identity
+In the instructions to install Azure IoT Edge above go to the section [Option 1: Authenticate with symmetric keys](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-edge?view=iotedge-2020-11#option-1-authenticate-with-symmetric-keys). The instructions there ask you to update the **Manual provisioning with connection string** section in the `config.toml` file. Instead we will edit the **DPS provisioning with symmetric key** section. Uncomment that section so it looks like this:
+```
+## DPS provisioning with symmetric key
+[provisioning]
+source = "dps"
+global_endpoint = "https://global.azure-devices-provisioning.net/"
+id_scope = "0ab1234C5D6"
+
+[provisioning.attestation]
+method = "symmetric_key"
+registration_id = "my-device"
+
+symmetric_key = { value = "YXppb3QtaWRlbnRpdHktc2VydmljZXxhemlvdC1pZGVudGl0eS1zZXJ2aWNlfGF6aW90LWlkZW50aXR5LXNlcg==" } # inline key (base64), or...
+# symmetric_key = { uri = "file:///var/secrets/device-id.key" }                                                          # file URI, or...
+# symmetric_key = { uri = "pkcs11:slot-id=0;object=device%20id?pin-value=1234" }                                         # PKCS#11 URI
+```
+Update the configuration information with the values you copied above. Continue with the instructions in the IoT Edge Documentation to apply your changes and verify successful configuration.
+
+After successfully configuring your IoT Edge device it will use the configuration to provision IoT Edge device as the device we created in IoT Central (e.g. ava-edge-gateway). To verify this you should notice that the device status in IoT Central changes from Registered to Provisioned:  
+<img src="./media/gatewaydeviceprovisioned.png" alt="Registered Gateway Provisioned" />
+
 
 ## Prerequisites
 * An Azure account that includes an active subscription.[Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F) if you don't already have one.
@@ -116,13 +171,13 @@ Now we are almost ready to publish this template, but first we have to add an ed
     git clone https://github.com/tbd
     ```
 
-1. Run the install command in the cloned directory. This command installs the required packages and runs the setup scripts.
+1. Run the install command in the cloned local folder. This command installs the required packages and runs the setup scripts.
    ```
    npm install
    ```
    As part of npm install a postInstall script is run to setup your development environment. This includes  
-   * Creating a `./configs` directory to store your working files. This directory is configured to be ignored by Git so as to prevent you accidentally checking in any confidential secrets.
-   * The `./configs` directory will include your working files:
+   * Creating a `./configs` folder to store your working files. This folder is configured to be ignored by Git so as to prevent you accidentally checking in any confidential secrets.
+   * The `./configs` folder will include your working files:
      * `imageConfig.json` - defines the docker container image name
      * `./mediaPipelines` - a folder containing the media pipeline files that you can edit. If you have any instance variables you would set them here in the `objectPipelineInstance.json` or the `motionPipelineInstance.json` file.
      * `./deploymentManifests` - a folder containing the Edge deployment manifest files for various cpu architectures and deployment configurations.
@@ -153,7 +208,10 @@ Now we are almost ready to publish this template, but first we have to add an ed
     ```
 ## Developer Notes
 You can build and push debug versions of the container by passing the debug flag to the build scripts  
-example: `npm run dockerbuild -- -d`
+##### Example:
+```
+npm run dockerbuild -- -d
+```
 
 This repository is open to freely copy and uses as you see fit. It is intended to provide a reference for a developer to use as a base and which can lead to a specific solution.
 
