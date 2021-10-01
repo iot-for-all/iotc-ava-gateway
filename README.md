@@ -24,7 +24,8 @@ Next, you should create an Azure IoT Central application to use as your device m
 In order for the IoT Edge module to access the APIs necessary to provision and register devices in the IoT Central application we will need to gather some information. Copy these values down in a safe place for use later in the tutorial.
 
 #### App Host Uri
-When you create your IoT Central application you will specify a name. The name combined with the base uri will be your App Host Uri - Ex. [yourapp.azureiotcentral.com]. Copy this value.  
+When you create your IoT Central application you will specify a name. The name combined with the base uri will be your App Host Uri. Copy this value.  
+##### Example:  
 <img src="./media/apphosturi.png" width="40%" alt="App Subdomain" />
 
 #### Api Token
