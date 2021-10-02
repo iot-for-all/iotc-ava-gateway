@@ -89,42 +89,46 @@ Name the device relationship and select the device model that we published in th
 Now we are almost ready to publish this template, but first we have need to add an edge deployment manifest to our edge gateway model.
 
 ### Create the Edge Deployment Manifest
- * In your cloned project repository folder you should have a `./configs` sub-folder which contains editable copies of the contents of the `./setup` folder. For this guide we will use the deployment manifest located at `./configs/deploymentManifests/deployment.quickstart.amd64.json`. The only value we should need to add to this file is the Azure Video Analytics account Edge Module access token that you saved earlier in this guide. Copy that value to the deployment manifest:  
- <img src="./media/avaedgemoduletoken.png" alt="AVA Edge Module Token" />
+ * In your cloned project repository folder you should have a `./configs` sub-folder which contains editable copies of the contents of the `./setup` folder. For this guide we will use the deployment manifest located at `./configs/deploymentManifests/deployment.quickstart.amd64.json`. The only value we should need to add to this file is the Azure Video Analytics account Edge Module access token that you saved earlier in this guide. Update the deployment manifest with your Edge Module access token:  
+ <img src="./media/avaedgemoduletoken.png" alt="AVA Edge Module Token" />  
+
  * Back in your IoT Central application select edit manifest from where we left off at the AVA Edge Gateway template screen:  
- <img src="./media/editmanifest.png" alt="Edit Gateway Manifest" />
- * Select the replace it with a new file option and open deployment template you just edited:  
- <img src="./media/replacemanifest.png" alt="Replace Gateway Manifest" />
+ <img src="./media/editmanifest.png" alt="Edit Gateway Manifest" />  
+ 
+ * Select the **replace it with a new file** option and open deployment template you just edited:  
+ <img src="./media/replacemanifest.png" alt="Replace Gateway Manifest" />  
+
  * You should see your manifest displayed, including the change to include the Azure Video Analyzer Edge module access token. If everything looks good, select the Save option:  
- <img src="./media/displaymanifest.png" alt="Display Gateway Manifest" />
+ <img src="./media/displaymanifest.png" alt="Display Gateway Manifest" />  
+
  * Select the Publish option to publish the completed gateway model template:  
  <img src="./media/publishgatewaymodel.png" alt="Publish Gateway Model" />
 
- At this point you have completed the steps define a gateway edge device template in IoT Central that includes an IoT Edge deployment manifest. This deployment manifest defines which modules the IoT Edge runtime should download onto the edge device, including where to get the modules and how the modules route messages between them and ultimately up to the cloud IoT Hub instance managed inside IoT Central.
+ At this point you have completed the steps to define a gateway edge device template in IoT Central that includes an IoT Edge deployment manifest. This deployment manifest defines which modules the IoT Edge runtime should download onto the edge device, including where to get the modules and how the modules route messages between them and ultimately up to the cloud IoT Hub instance managed inside IoT Central.
 
- The next step will be to create an IoT Edge device that is configured to register itself with our IoT Central application. Once that is done, the deployment manifest will begin downloading the modules to the edge device and the entire solution will begin operating.
+ The next steps will be to create a registration in IoT Central for an IoT Edge device and then configure real IoT Edge device hardware with the credentials so that it can provision itself as our new device. Once that is done, the deployment manifest will be downloaded into the edge device and the IoT Edge runtime will begin downloading the specified modules to the edge device and the entire solution will begin operating.
 
-## Create an IoT Edge Device
-The full documentation describing how to install Azure IoT Edge on a device can be found at [Install or uninstall Azure IoT Edge for Linux](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-edge?view=iotedge-2020-11). This documentation is specific to the Linux operating system but the Azure IoT Edge documentation online has instructions for other operating systems as well as the caveats regarding version and feature support on each operating system. For the purposes of this guide we will assume an AMD64/x64 device running the Linux Ubuntu version 20.x operating system. See the specific [instructions on how to install the Ubuntu operation system](https://ubuntu.com/tutorials/install-ubuntu-desktop#1-overview) on hardware that you would like to use as your Azure IoT Edge device.
+### Create an IoT Edge Device
+First, you will need to setup and configure some hardware to be your IoT Edge device. The full documentation describing how to install Azure IoT Edge on a device can be found at [Install or uninstall Azure IoT Edge for Linux](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-edge?view=iotedge-2020-11). This documentation is specific to the Linux operating system but the Azure IoT Edge documentation online has instructions for other operating systems as well as the caveats regarding version and feature support on each operating system. For the purposes of this guide we will assume an AMD64/x64 device running the Linux Ubuntu version 20.x operating system. See the specific [instructions on how to install the Ubuntu operation system](https://ubuntu.com/tutorials/install-ubuntu-desktop#1-overview) on hardware that you would like to use as your Azure IoT Edge device.
 
 > NOTE: In the Azure Video Analytics quickstart linked at the beginning of this guide you created an Azure VM with the Azure IoT Edge runtime installed on it. Feel free to use that Virtual Machine resource; however, you will need to first [upgrade the Azure IoT Edge runtime to version 1.2](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-update-iot-edge?view=iotedge-2020-11&tabs=linux).
 
 ### In your IoT Central app create a new gateway device
-Select Devices in the left pane, then select the AVA Edge Gateway model to the right, then select New at the top of the window:  
+Next, you will need to create a device registration for your IoT Edge device. Select Devices in the left pane, then select the AVA Edge Gateway model to the right, then select New at the top of the window:  
 <img src="./media/newgatewaydevice.png" alt="Add New Gateway Device" />
 
 Give the new device a name and device id, then select the Create button at the bottom of the window:  
 <img src="./media/createnewgatewaydevice.png" width="50%" alt="Create New Gateway Device" />
 
-By creating a new device using the AVA Edge Gateway model this device instance will take on all of the capability of the model definition, including specifically the edge deployment manifest that we included earlier. You should see the new device in your device list:  
+By creating a new device registration using the AVA Edge Gateway model this device instance will take on all of the capability of the model definition, including specifically the edge deployment manifest that we included earlier. You should see the new device in your device list. Notice that the Device status is currently set to **Registered**. This means that the device is configured in the cloud. Specifically, it is registered in the Device enrollment group for edge devices managed by IoT Central. This scenario is what is called "cloud first provisioning".
+
+Select the gateway device to view its details screen
 <img src="./media/gatewaydeviceregistered.png" alt="Registered Gateway Device" />
 
-Notice that the Device statis is currently set to **Registered**. This means that the device is configured in the cloud. Specifically, it is registered in the Device enrollment group for edge devices managed by IoT Central. This scenario is what is called "cloud first provisioning".
-
-Select the gateway device to view its details screen, then select the Connect option at the top of the window:  
+Next, select the Connect option at the top of the window:  
 <img src="./media/gatewaydeviceconnect.png" alt="Gateway Device Connect" />
 
-This will display the device connection information. We will need to gather three pieces of information to use to provision the IoT Edge device as this cloud created device:  
+This will display the device connection information. We will need to gather three pieces of information to use in the IoT Edge device configuration file:  
   1. ID scope (to be used as id_scope in the IoT Edge configuration)
   1. Device ID (to be used as registration_id in the IoT Edge configuration)
   1. Primary key (to be used as symmetric_key in the IoT Edge configuration)
@@ -149,11 +153,14 @@ symmetric_key = { value = "YXppb3QtaWRlbnRpdHktc2VydmljZXxhemlvdC1pZGVudGl0eS1zZ
 # symmetric_key = { uri = "file:///var/secrets/device-id.key" }                                                          # file URI, or...
 # symmetric_key = { uri = "pkcs11:slot-id=0;object=device%20id?pin-value=1234" }                                         # PKCS#11 URI
 ```
-Update the configuration information with the values you copied above. Continue with the instructions in the IoT Edge Documentation to apply your changes and verify successful configuration.
+Update the configuration file with the values you copied above. Continue with the instructions in the IoT Edge Documentation to apply your changes and verify successful configuration.
 
 After successfully configuring your IoT Edge device it will use the configuration to provision IoT Edge device as the device we created in IoT Central (e.g. ava-edge-gateway). To verify this you should notice that the device status in IoT Central changes from Registered to Provisioned:  
 <img src="./media/gatewaydeviceprovisioned.png" alt="Registered Gateway Provisioned" />
 
+IoT Edge solutions require a fair amount of configuration and depending on your network environment, hardware, or configuration you can encounter issues. Be sure to use the following guides for diagnosing common issues with Azure IoT Edge:
+ * [Troubleshoot your IoT Edge device](https://docs.microsoft.com/en-us/azure/iot-edge/troubleshoot?view=iotedge-2020-11)
+ * [Common issues and resolutions for Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/troubleshoot-common-errors?view=iotedge-2020-11)
 
 ## Prerequisites
 * An Azure account that includes an active subscription.[Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F) if you don't already have one.
