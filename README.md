@@ -1,6 +1,8 @@
 # Azure IoT Central gateway module for Azure Video Analyzer
 This sample demonstrates how to use Azure IoT Central to collect AI inferencing from intelligent video cameras using the Azure Video Analyer Edge module. This sample includes a custom Azure IoT Edge gateway module for IoT Central and a deployment manifest configured to deploy all the necessary components to create intelligent camera devices using the Azure Video Analyzer Edge module.
 
+<img src="./media/arch_pipeline.png" width="75%" alt="Architecture Pipeline" />
+
 The full documentation for IoT Central support for Azure IoT Edge devices can be found at [Connect Azure IoT Edge devices to an Azure IoT Central application](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-iot-edge)
 
 The full documentation for Azure Video Analyzer can be found at [What is Azure Video Analyzer?](https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/overview)
@@ -12,6 +14,9 @@ A quick note about the differences between using IoT Hub vs. IoT Central. IoT Ce
 After going through the Azure Video Analyzer quickstart linked above you should have created an Azure Video Analyzer account with associated resources including Azure Storage Account, Managed Identity, IoT Hub, and an Azure Virtual Machine to act as your simulated IoT edge network and device. The steps that follow in this guide will only need the Azure Video Analyzer account, storage account, and managed identity.
 
 ## Create an Azure Video Analyzer account
+
+<img src="./media/arch_avaaccount.png" width="75%" alt="Azure Video Analytics Account" />
+
 You should have already done this by following the Azure Video Analyzer quickstart linked above. From the [Azure Portal](https://portal.azure.com) you should be able to access your Azure Video Analyzer account.
 
 View your Azure Video Analyzer account now and select Edge Modules from the left pane. You should see an edge module created from the quickstart earlier, if not you can create a new one. Select Generate token on the right side of the window and copy this value in a safe place to use later in the tutorial.
@@ -162,6 +167,12 @@ IoT Edge solutions require a fair amount of configuration and depending on your 
  * [Troubleshoot your IoT Edge device](https://docs.microsoft.com/en-us/azure/iot-edge/troubleshoot?view=iotedge-2020-11)
  * [Common issues and resolutions for Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/troubleshoot-common-errors?view=iotedge-2020-11)
 
+## TBD
+* diagram of overall flow at the beginning
+* create a diagram of the subflow for each section depicting what was just configured
+* at this point edge should be communicating with hub/central show a diagram of the flow (again)
+* next, describe that the "solution" itself needs to be configured (e.g. gateway configuration)
+* maybe there are two overall flows, one for just edge to cloud components (e.g. device config, manifest, routing, registration, agent, hub, dps, central) and one for solution flow (e.g. gateway config, create camera device, get props, get picture, start inferencing)
 ## Prerequisites
 * An Azure account that includes an active subscription.[Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F) if you don't already have one.
   > Note
