@@ -23,6 +23,9 @@ View your Azure Video Analyzer account now and select Edge Modules from the left
 <img src="./media/avaedgemodule.png" alt="AVA Edge Module" />
 
 ## Create an Azure IoT Central Application
+
+<img src="./media/arch_iotcaccount.png" alt="Azure IoT Central Account" />
+
 Next, you should create an Azure IoT Central application to use as your device management and data ingestions platform. Follow the instructions in the [Create an IoT Central application guide](https://docs.microsoft.com/en-us/azure/iot-central/core/howto-create-iot-central-application#azure-iot-central-site) to create a new IoT Central application using the Custom app option. Select the appropriate plan for your needs.
 
 ### Gather in the information needed for API access to your IoT Central app
@@ -46,6 +49,9 @@ Select Administration from the left pane, then select Device connection. Next, s
 IoT Central uses capability models to describe what kind of data the devices will send (Telemetry, State, Events, and Properties) as well as what kind of commands (Direct Methods) the devices support. This gives IoT Central insight into how to support the devices and how to reason over the ingested data - e.g. rules, relationships, visualizations, and data export formats.
 
 #### Import the Device Model
+
+<img src="./media/arch_iotcdevicemodel.png" alt="IoT Central Device Model" />
+
 Select Device templates from the left pane. Select the new option to create a new template:  
 <img src="./media/newiotdevicetemplate.png" alt="New Device Template" />
 
@@ -65,6 +71,9 @@ When asked, navigate in your repository to the `./setup/deviceCapabilityModels/A
 <img src="./media/avaonvifcameramodel.png" alt="Onvif Camera Model" />
 
 #### Import the Edge Gateway Model
+
+<img src="./media/arch_iotcgatewaymodel.png" alt="IoT Central Gateway Model" />
+
 We will use the same steps to import the gateway model. One extra step will be to associate the device model with the gateway. This establishes the relationship between the gateway module that we will deploy and the leaf devices (downstream devices) that it will create.
 
 Select Device templates from the left pane. Select the new option to create a new template:  
@@ -94,6 +103,9 @@ Name the device relationship and select the device model that we published in th
 Now we are almost ready to publish this template, but first we have need to add an edge deployment manifest to our edge gateway model.
 
 ### Create the Edge Deployment Manifest
+
+<img src="./media/arch_iotcgwmanifest.png" alt="IoT Central Gateway Edge Deployment Manifest" />
+
  * In your cloned project repository folder you should have a `./configs` sub-folder which contains editable copies of the contents of the `./setup` folder. For this guide we will use the deployment manifest located at `./configs/deploymentManifests/deployment.quickstart.amd64.json`. The only value we should need to add to this file is the Azure Video Analytics account Edge Module access token that you saved earlier in this guide. Update the deployment manifest with your Edge Module access token:  
  <img src="./media/avaedgemoduletoken.png" alt="AVA Edge Module Token" />  
 
@@ -114,6 +126,9 @@ Now we are almost ready to publish this template, but first we have need to add 
  The next steps will be to create a registration in IoT Central for an IoT Edge device and then configure real IoT Edge device hardware with the credentials so that it can provision itself as our new device. Once that is done, the deployment manifest will be downloaded into the edge device and the IoT Edge runtime will begin downloading the specified modules to the edge device and the entire solution will begin operating.
 
 ### Create an IoT Edge Device
+
+<img src="./media/arch_edgedevice.png" alt="IoT Edge Device" />
+
 First, you will need to setup and configure some hardware to be your IoT Edge device. The full documentation describing how to install Azure IoT Edge on a device can be found at [Install or uninstall Azure IoT Edge for Linux](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-edge?view=iotedge-2020-11). This documentation is specific to the Linux operating system but the Azure IoT Edge documentation online has instructions for other operating systems as well as the caveats regarding version and feature support on each operating system. For the purposes of this guide we will assume an AMD64/x64 device running the Linux Ubuntu version 20.x operating system. See the specific [instructions on how to install the Ubuntu operation system](https://ubuntu.com/tutorials/install-ubuntu-desktop#1-overview) on hardware that you would like to use as your Azure IoT Edge device.
 
 > NOTE: In the Azure Video Analytics quickstart linked at the beginning of this guide you created an Azure VM with the Azure IoT Edge runtime installed on it. Feel free to use that Virtual Machine resource; however, you will need to first [upgrade the Azure IoT Edge runtime to version 1.2](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-update-iot-edge?view=iotedge-2020-11&tabs=linux).
@@ -142,6 +157,9 @@ Copy these values to be used in the next section:
 <img src="./media/gatewaydeviceconnection.png" width="50%" alt="Gateway Device Connection Information" />
 
 ### Provision the IoT Edge device with its cloud identity
+
+<img src="./media/arch_edgedeviceconfig.png" alt="IoT Edge Device Configuration" />
+
 In the instructions to install Azure IoT Edge above go to the section [Option 1: Authenticate with symmetric keys](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-edge?view=iotedge-2020-11#option-1-authenticate-with-symmetric-keys). The instructions there ask you to update the **Manual provisioning with connection string** section in the `config.toml` file. Instead we will edit the **DPS provisioning with symmetric key** section. Uncomment that section so it looks like this:
 ```
 ## DPS provisioning with symmetric key
@@ -168,9 +186,6 @@ IoT Edge solutions require a fair amount of configuration and depending on your 
  * [Common issues and resolutions for Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/troubleshoot-common-errors?view=iotedge-2020-11)
 
 ## TBD
-* diagram of overall flow at the beginning
-* create a diagram of the subflow for each section depicting what was just configured
-* at this point edge should be communicating with hub/central show a diagram of the flow (again)
 * next, describe that the "solution" itself needs to be configured (e.g. gateway configuration)
 * maybe there are two overall flows, one for just edge to cloud components (e.g. device config, manifest, routing, registration, agent, hub, dps, central) and one for solution flow (e.g. gateway config, create camera device, get props, get picture, start inferencing)
 ## Prerequisites
