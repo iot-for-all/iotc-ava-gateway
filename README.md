@@ -1,7 +1,7 @@
 # Azure IoT Central gateway module for Azure Video Analyzer
 This sample demonstrates how to use Azure IoT Central to collect AI inferencing from intelligent video cameras using the Azure Video Analyer Edge module. This sample includes a custom Azure IoT Edge gateway module for IoT Central and a deployment manifest configured to deploy all the necessary components to create intelligent camera devices using the Azure Video Analyzer Edge module.
 
-<img src="./media/arch_pipeline.png" width="75%" alt="Architecture Pipeline" />
+<img src="./media/arch_pipeline.png" alt="Architecture Pipeline" />
 
 The full documentation for IoT Central support for Azure IoT Edge devices can be found at [Connect Azure IoT Edge devices to an Azure IoT Central application](https://docs.microsoft.com/en-us/azure/iot-central/core/concepts-iot-edge)
 
@@ -15,7 +15,7 @@ After going through the Azure Video Analyzer quickstart linked above you should 
 
 ## Create an Azure Video Analyzer account
 
-<img src="./media/arch_avaaccount.png" width="75%" alt="Azure Video Analytics Account" />
+<img src="./media/arch_avaaccount.png" alt="Azure Video Analytics Account" />
 
 You should have already done this by following the Azure Video Analyzer quickstart linked above. From the [Azure Portal](https://portal.azure.com) you should be able to access your Azure Video Analyzer account.
 
