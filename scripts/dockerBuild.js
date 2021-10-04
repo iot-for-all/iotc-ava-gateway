@@ -65,6 +65,7 @@ async function start() {
             await execDockerPush(dockerImage);
         }
     } catch (e) {
+        log(`Exception: ${e.message}`);
         buildFailed = true;
     } finally {
         if (!buildFailed) {
@@ -73,7 +74,7 @@ async function start() {
     }
 
     if (buildFailed) {
-        log(`Operation failed, see errors above`);
+        log(`Operation failed, exiting...`);
 
         process.exit(-1);
     }

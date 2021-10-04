@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV DATADIR /data/content
 WORKDIR ${DATADIR}
 
+ADD ./configs/mediaPipelines/objectDetectionYoloV3Ext-Pipeline.json ${DATADIR}/mediaPipelines/objectDetectionYoloV3Ext-Pipeline.json
+ADD ./configs/mediaPipelines/objectDetectionYoloV3Ext-Live.json ${DATADIR}/mediaPipelines/objectDetectionYoloV3Ext-Live.json
+
 ENV WORKINGDIR /app
 WORKDIR ${WORKINGDIR}
 

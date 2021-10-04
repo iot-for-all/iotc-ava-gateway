@@ -353,24 +353,24 @@
                 "request": {
                     "@type": "CommandPayload",
                     "displayName": {
-                        "en": "Configure Gateway Request"
+                        "en": "Configure Gateway Module Request"
                     },
                     "name": "ConfigureGatewayRequest",
                     "schema": {
                         "@type": "Object",
                         "displayName": {
-                            "en": "Configure Gateway Request"
+                            "en": "Configure Gateway Module Request"
                         },
                         "fields": [
                             {
                                 "displayName": {
-                                    "en": "iotCentral"
+                                    "en": "Gateway Module Configuration"
                                 },
-                                "name": "iotCentral",
+                                "name": "moduleConfig",
                                 "schema": {
                                     "@type": "Object",
                                     "displayName": {
-                                        "en": "IoT Central Configuration"
+                                        "en": "Gateway Module Configuration"
                                     },
                                     "fields": [
                                         {
@@ -405,14 +405,14 @@
                                         },
                                         {
                                             "displayName": {
-                                                "en": "dpsProvisioningHost"
+                                                "en": "dpsProvisioningHost (optional)"
                                             },
                                             "name": "dpsProvisioningHost",
                                             "schema": "string"
                                         },
                                         {
                                             "displayName": {
-                                                "en": "avaOnvifCameraModelId"
+                                                "en": "avaOnvifCameraModelId (optional)"
                                             },
                                             "name": "avaOnvifCameraModelId",
                                             "schema": "string"
@@ -422,13 +422,13 @@
                             },
                             {
                                 "displayName": {
-                                    "en": "blobStorage"
+                                    "en": "Azure Blob Storage Account (optional)"
                                 },
                                 "name": "blobStorage",
                                 "schema": {
                                     "@type": "Object",
                                     "displayName": {
-                                        "en": "Blob Storage Configuration"
+                                        "en": "Blob Storage Parameters"
                                     },
                                     "fields": [
                                         {
@@ -601,7 +601,7 @@
                             },
                             {
                                 "displayName": {
-                                    "en": "OnvifCamera"
+                                    "en": "Onvif Camera"
                                 },
                                 "name": "isOnvifCamera",
                                 "schema": "boolean"

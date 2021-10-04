@@ -34,6 +34,8 @@ import {
 import * as crypto from 'crypto';
 import * as Wreck from '@hapi/wreck';
 import { URL } from 'url';
+import { join as pathJoin } from 'path';
+import * as fse from 'fs-extra';
 import { bind, emptyObj, forget, sleep } from '../utils';
 
 const ModuleName = 'CameraGatewayService';
@@ -224,8 +226,17 @@ export class CameraGatewayService {
     }
 
     @bind
-    public initializeModule(): void {
+    public async initializeModule(): Promise<void> {
+        this.server.log([ModuleName, 'info'], `initializeModule`);
+
         this.iotCentralPluginModule = this.server.settings.app.iotCentral;
+
+        try {
+            await this.initializePipelineCache();
+        }
+        catch (ex) {
+            this.server.log([ModuleName, 'error'], `Exception while initializing the gateway module: ${ex.message}`);
+        }
     }
 
     @bind
@@ -490,6 +501,21 @@ export class CameraGatewayService {
         }
 
         return this.healthState;
+    }
+
+    private async initializePipelineCache(): Promise<void> {
+        this.server.log([ModuleName, 'info'], `initializePipelineCache`);
+
+        try {
+            const files = fse.readdirSync(pathJoin(this.server.settings.app.contentRootDirectory, `mediaPipelines`));
+            for (const file of files) {
+                // await this.server.settings.app.config.set(pathJoin(PipelineCache, contentName), avaPipelineContent);
+                fse.copySync(pathJoin(this.server.settings.app.contentRootDirectory, `mediaPipelines`, file), pathJoin(this.server.settings.app.storageRootDirectory, PipelineCache, file));
+            }
+        }
+        catch (ex) {
+            this.server.log([ModuleName, 'error'], `Exception while initializing the pipeline cache: ${ex.message}`);
+        }
     }
 
     private checkModuleConfig(): { result: boolean; message: string } {

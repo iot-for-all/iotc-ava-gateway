@@ -27,7 +27,7 @@ export interface IDirectMethodResult {
 type DirectMethodFunction = (commandRequest: DeviceMethodRequest, commandResponse: DeviceMethodResponse) => Promise<void>;
 
 export interface IIotCentralPluginModuleOptions {
-    initializeModule(): void;
+    initializeModule(): Promise<void>;
     debugTelemetry(): boolean;
     onHandleModuleProperties(desiredProps: any): Promise<void>;
     onHandleDownstreamMessages?(inputName: string, message: IoTMessage): Promise<void>;
@@ -89,7 +89,7 @@ class IotCentralPluginModule implements IIotCentralPluginModule {
         let result = false;
 
         try {
-            this.options.initializeModule();
+            await this.options.initializeModule();
 
             for (let connectCount = 1; !result && connectCount <= 3; connectCount++) {
                 result = await this.connectModuleClient();
