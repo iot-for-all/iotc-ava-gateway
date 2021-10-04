@@ -378,7 +378,7 @@
                                                 "en": "appHostUri"
                                             },
                                             "comment": "The host uri that identifies your app. Ex. [yourapp.azureiotcentral.com]",
-                                            "name": "appSubDomain",
+                                            "name": "appHostUri",
                                             "schema": "string"
                                         },
                                         {

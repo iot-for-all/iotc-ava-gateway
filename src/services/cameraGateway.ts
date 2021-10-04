@@ -553,9 +553,9 @@ export class CameraGatewayService {
             }
             else {
                 this.moduleConfig = {
+                    ...gatewayConfiguration.moduleConfig,
                     dpsProvisioningHost: gatewayConfiguration.moduleConfig?.dpsProvisioningHost || process.env.dpsProvisioningHost || defaultDpsProvisioningHost,
-                    avaOnvifCameraModelId: gatewayConfiguration.moduleConfig?.avaOnvifCameraModelId || process.env.avaOnvifCameraModelId || defaultAvaOnvifCameraModelId,
-                    ...gatewayConfiguration.moduleConfig
+                    avaOnvifCameraModelId: gatewayConfiguration.moduleConfig?.avaOnvifCameraModelId || process.env.avaOnvifCameraModelId || defaultAvaOnvifCameraModelId
                 };
 
                 const blobStorageConfig = {

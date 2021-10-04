@@ -31,8 +31,7 @@
                 "modules": {
                     "rtspsim": {
                         "settings": {
-                            "image": "mcr.microsoft.com/ava-utilities/rtspsim-live555:1.2",
-                            "createOptions": "{\"HostConfig\":{\"Binds\":[\"/home/localedgeuser/samples/input:/live/mediaServer/media\"]}}"
+                            "image": "mcr.microsoft.com/ava-utilities/rtspsim-live555:1.2"
                         },
                         "type": "docker",
                         "status": "running",

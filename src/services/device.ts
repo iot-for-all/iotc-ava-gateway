@@ -992,7 +992,7 @@ export class AvaCameraDevice {
     }
 
     private async getPipelineContent(contentName: string): Promise<any> {
-        let avaPipelineContent = this.server.settings.app.config.get(pathJoin(PipelineCache, contentName));
+        let avaPipelineContent = await this.server.settings.app.config.get(pathJoin(PipelineCache, contentName));
 
         if (!avaPipelineContent || emptyObj(avaPipelineContent)) {
             this.server.log([this.cameraInfo.cameraId, 'info'], `Pipeline content named: ${contentName} not found in cache. Downloading from blob store...`);
