@@ -26,23 +26,6 @@ View your Azure Video Analyzer account now and select Edge Modules from the left
 
 Next, you should create an Azure IoT Central application to use as your device management and data ingestions platform. Follow the instructions in the [Create an IoT Central application guide](https://docs.microsoft.com/en-us/azure/iot-central/core/howto-create-iot-central-application#azure-iot-central-site) to create a new IoT Central application using the Custom app option. Select the appropriate plan for your needs.
 
-### Gather in the information needed for API access to your IoT Central app
-In order for the IoT Edge module to access the APIs necessary to provision and register devices in the IoT Central application we will need to gather some information. Copy these values down in a safe place for use later in the tutorial.
-
-#### App Host Uri
-When you create your IoT Central application you will specify a name. The name combined with the base uri will be your App Host Uri. Copy this value.  
-##### Example:
-<img src="./media/apphosturi.png" width="40%" alt="App Host Uri" />
-
-#### Api Token
-In your IoT Central application select Administration from the left pane, then select API tokens. You will see an option at the top of the window to create a new API token. Create a new token using the Operator role. Copy the value of the API token for use later.  
-<img src="./media/apitoken.png" alt="API Token" />
-
-#### Device Key and Scope Id
-Select Administration from the left pane, then select Device connection. Next, select the SAS-IoT-Devices link to reveal the enrollment group Shared access signature Primary key used to create device provisioning keys. Copy the Primary key and Scope id for use later.  
-<img src="./media/deviceconnection.png" alt="Device Connection" />
-<img src="./media/devicekeyscopeid.png" alt="Device Key" />
-
 ### Import the IoT Central device capability models for the camera device and for the gateway module
 IoT Central uses capability models to describe what kind of data the devices will send (Telemetry, State, Events, and Properties) as well as what kind of commands (Direct Methods) the devices support. This gives IoT Central insight into how to support the devices and how to reason over the ingested data - e.g. rules, relationships, visualizations, and data export formats.
 
@@ -179,20 +162,63 @@ IoT Edge solutions require a fair amount of configuration and depending on your 
  * [Common issues and resolutions for Azure IoT Edge](https://docs.microsoft.com/en-us/azure/iot-edge/troubleshoot-common-errors?view=iotedge-2020-11)
 
 ## Test the solution with a real camera
- * Use the Commands on the IoT Central Gateway device
-   * Fill out the Configure Gateway command parameters with the values you saved from the steps above. The Blob Storage parameters are optional.
-   * Select the Run button
-   * > Note: while testing the gateway module it is good practice to monitor the logging of the module. Keep another command windows open with a connection to your IoT Edge device. View the conainter logs with `docker logs -f --tail 200 AvaEdgeGatewayModule`
-   * You should see some logging that the command to configure the gateway was executed on the IoT Edge device.
- * Next, Fill out the Add Camera command parameters. If you have a camera that supports the ONVIF protocol select True for the Onvif Camera parameter. Otherwise select False and fill in the additional parameters for the camera properties.
- * Select the Run button
- * Once again, view the logs on the IoT Edge device and verify the command was run.
- * If the command succeeded you should see the camera device you just created in the Device list in IoT Central.
- * Now, if you select that device you can see commands associated with the camera device model.
- * One of those commands is Start AVA Processing. That command requires the name of a Pipeline and a Live configuration for the Video Analytics module to apply to the camera stream. These parameters refer to files which can be either stored on an Azure Storage account (blob storage container) or they can be read directly from the storage on the Azure IoT Edge device. The IoT Central gateway module is pre-configured to include a set of sample pipeline files. One of those files is `objectDetectionYoloV3Ext-Pipeline` and `objectDetectionYoloV3Ext-Live`. Use these values for the Start AVA Processing command.
- * Assuming the camera you specified when you created the camera device was property configured with either a valid local network IP Address, ONVIF username and ONVIF password in the case of an ONVIF supported camera, or a valid RTSP camera stream with username and password in the case of a non-ONVIF camera, the Azure Video Analytics Edge module should begin processing the video stream from the camera.
- * To verify that video processing is happening you can view the log files on the IoT Edge device, or you can view the Raw Data telemetry values that are being ingested and processed in your IoT Central application.
- * To view the Raw Data input from your camera device select the camera device in IoT Central, then select the Raw Data tab.
+### Configure the IoT Central Gateway module
+Before you can create camera devices the IoT Central gateway module needs to be configured with some parameters that give it authorization to create and delete devices. Select the ava-edge-gateway device that you created:
+<img src="./media/run_gatewaydevice.png" alt="Select Gateway Device" />
+
+Next, select the Commands tab and scroll to the Configure Gateway command:  
+<img src="./media/run_gatewayconfiguration.png" alt="Configure Gateway Device" />
+
+Open a second browser window to your IoT Central application to gather the values below.
+ * appHostUri
+   When you create your IoT Central application you will specify a name. The name combined with the base uri will be your App Host Uri. You can find this value in the Administration settings. Copy this full url to the appHostUri field in your first window:  
+   <img src="./media/collect_apphosturi.png" alt="App Host Uri" />
+
+ * apiToken
+   In your IoT Central application select Administration from the left pane, then select API tokens. You will see an option at the top of the window to create a new API token. Create a new token using the Operator role. Copy this value to the apiToken field in your first window:  
+   <img src="./media/collect_apitoken.png" alt="API Token" />
+
+ * deviceKey and scopeId
+   Select Administration from the left pane, then select Device connection. Next, select the SAS-IoT-Devices link to reveal the enrollment group Shared access signature Primary key used to create device provisioning keys. Copy these values to the to the same fields in your first window:  
+   <img src="./media/collect_deviceconnection.png" alt="Device Connection" />
+   <img src="./media/collect_devicekeyscopeid.png" alt="Device Key" />
+
+ * The dpsProvisioningHost and avaOnvifCameraModelId parameters are optional. The Blob Storage parameters are optional also.
+
+Select the Run button at the bottom of the window when you are finished entering the values.
+> Note: while testing the gateway module it is good practice to monitor the logging output of the module. Keep another command windows open with a connection to your IoT Edge device. View the conainter logs with the Docker command:
+> ```
+> docker logs -f --tail 200 AvaEdgeGatewayModule
+> ```
+
+You should see some logging from the module that the command was received and was executed on the IoT Edge device.
+
+### Create a Camera Device
+Next, Fill out the Add Camera command parameters. If you have a camera that supports the ONVIF protocol select True and skip the Camera Device Information parameters - these parameters will be automatically read using the ONVIF protocol.
+
+If your camera is a plain RTSP camera select False and provide the RTSP Video Stream value as well as the additional parameters for Camera Device Information:
+<img src="./media/run_gatewaycreatecamera.png" alt="Create Camera" />
+
+Select the Run button at the bottom of the window when you are finished.
+
+Once again, view the logging output on the IoT Edge device and verify the command was run.
+
+If the command succeeded you should see the camera device you just created in the Device list in IoT Central:  
+<img src="./media/run_cameradevice.png" alt="Camera Device" />
+
+Now, select that device select the Commands tab to see the supported commands defined by this device model:
+<img src="./media/run_devicecommands.png" alt="Device Commands" />
+
+Scroll down to the Start AVA Processing command. That command requires the name of a Pipeline and a Live configuration for the Video Analytics module to apply to the camera stream. These parameters refer to files which can be either stored on an Azure Storage account (blob storage container) or they can be read directly from the storage on the Azure IoT Edge device. The IoT Central gateway module is pre-built to include a set of sample pipeline files. One of those pipeline sets is `objectDetectionYoloV3Ext-Pipeline` and `objectDetectionYoloV3Ext-Live`.
+
+Enter these values for the Start AVA Processing command:
+<img src="./media/run_startavaprocessing.png" alt="Start AVA Processing" />
+
+Assuming the camera you specified when you created the camera device was property configured with either a valid local network IP Address, ONVIF username and ONVIF password in the case of an ONVIF supported camera, or a valid RTSP camera stream with username and password in the case of a non-ONVIF camera, the Azure Video Analytics Edge module should begin processing the video stream from the camera.
+ 
+To verify that video processing is happening you can view the log files on the IoT Edge device, or you can view the Raw Data telemetry values that are being ingested and processed in your IoT Central application. To view the Raw Data input from your camera device select the camera device in IoT Central, then select the Raw Data tab:  
+<img src="./media/run_rawdatatab.png" alt="Raw Data Tab" />
+<img src="./media/run_rawdatainference.png" alt="Raw Data Inference" />
 
 ## Custom Development
 This sample is intended to provide a reference for a developer to use as a basis which can lead to a specific solution. Follow the instructions below to build your own version of this sample.

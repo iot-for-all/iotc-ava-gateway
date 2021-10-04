@@ -104,7 +104,7 @@
         },
         "AvaEdgeGatewayModule": {
             "properties.desired": {
-                "wpDebugTelemetry": false,
+                "wpDebugTelemetry": true,
                 "wpDebugRoutedMessage": false
             }
         },
