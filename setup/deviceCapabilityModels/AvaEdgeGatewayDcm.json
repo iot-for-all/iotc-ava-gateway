@@ -758,6 +758,13 @@
                     "en": "Clear Pipeline Cache"
                 },
                 "name": "cmClearPipelineCache"
+            },
+            {
+                "@type": "Command",
+                "displayName": {
+                    "en": "Deactivate All Live Pipelines"
+                },
+                "name": "cmStopAllPipelineInstances"
             }
         ]
     }

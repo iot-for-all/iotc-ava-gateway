@@ -660,24 +660,6 @@
                 },
                 "name": "evRecordingAvailable",
                 "schema": "string"
-            },
-            {
-                "@type": "Property",
-                "displayName": {
-                    "en": "Max Inference Capture Time (sec)"
-                },
-                "name": "wpMaxVideoInferenceTime",
-                "writable": true,
-                "schema": "integer"
-            },
-            {
-                "@type": "Property",
-                "displayName": {
-                    "en": "Host for Video Playback Links"
-                },
-                "name": "wpVideoPlaybackHost",
-                "writable": true,
-                "schema": "string"
             }
         ]
     },
@@ -835,26 +817,6 @@
                         }
                     ]
                 }
-            },
-            {
-                "@type": [
-                    "Telemetry",
-                    "Event"
-                ],
-                "displayName": {
-                    "en": "Inference Event Video"
-                },
-                "name": "evInferenceEventVideoUrl",
-                "schema": "string"
-            },
-            {
-                "@type": "Property",
-                "displayName": {
-                    "en": "Inference Timeout (sec)"
-                },
-                "name": "wpInferenceTimeout",
-                "writable": true,
-                "schema": "integer"
             }
         ]
     }

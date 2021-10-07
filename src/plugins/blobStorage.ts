@@ -35,8 +35,6 @@ export const blobStoragePluginModule: Plugin<any> = {
         server.log([PluginName, 'info'], 'register');
 
         try {
-            server.log([PluginName, 'info'], 'register');
-
             server.settings.app.blobStorage = new BlobStoragePluginModule(server);
         }
         catch (ex) {

@@ -1,10 +1,7 @@
 import { Server } from '@hapi/hapi';
 import { IIotCentralPluginModule } from '../plugins/iotCentralModule';
-import { AvaPipeline } from './avaPipeline';
-import {
-    PipelineCache,
-    ICameraProvisionInfo
-} from './cameraGateway';
+import { DeviceCacheOperation, ICachedDeviceProvisionInfo, PipelineCache } from '../plugins/cameraGateway';
+import { ICameraProvisionInfo } from './cameraGateway';
 import { HealthState } from './health';
 import { Mqtt as IoTHubTransport } from 'azure-iot-device-mqtt';
 import {
@@ -18,9 +15,27 @@ import { join as pathJoin } from 'path';
 import * as moment from 'moment';
 import { bind, defer, emptyObj } from '../utils';
 
-export type DirectMethodHandler = (...args: any[]) => Promise<{ result: boolean; payload: any }>;
+enum AvaDirectMethodCommands {
+    SetTopology = 'pipelineTopologySet',
+    DeleteTopology = 'pipelineTopologyDelete',
+    SetLivePipeline = 'livePipelineSet',
+    DeleteLivePipeline = 'livePipelineDelete',
+    ActivateLivePipeline = 'livePipelineActivate',
+    DeactivateLivePipeline = 'livePipelineDeactivate'
+}
 
-export interface IClientConnectResult {
+interface IAvaPipelineHeader {
+    ['@apiVersion']: string;
+    name: string;
+}
+interface IAvaProcessingContext {
+    avaLivePipeline: any;
+    avaPipelineTopology: any;
+    avaLivePipelineHeader: IAvaPipelineHeader;
+    avaPipelineTopologyHeader: IAvaPipelineHeader;
+}
+
+interface IClientConnectResult {
     clientConnectionStatus: boolean;
     clientConnectionMessage: string;
 }
@@ -30,7 +45,7 @@ enum CameraProcessingState {
     Active = 'active'
 }
 
-export interface ICameraDeviceInformation {
+interface ICameraDeviceInformation {
     manufacturer: string;
     model: string;
     firmwareVersion: string;
@@ -80,7 +95,6 @@ export enum AvaOnvifCameraCapability {
     rpUsername = 'rpUsername',
     rpPassword = 'rpPassword',
     rpCaptureImageUrl = 'rpCaptureImageUrl',
-    wpVideoPlaybackHost = 'wpVideoPlaybackHost',
     cmGetOnvifCameraProps = 'cmGetOnvifCameraProps',
     cmGetOnvifMediaProfiles = 'cmGetOnvifMediaProfiles',
     cmSetOnvifMediaProfile = 'cmSetOnvifMediaProfile',
@@ -91,14 +105,6 @@ export enum AvaOnvifCameraCapability {
     cmStopAvaPipeline = 'cmStopAvaPipeline',
     cmGetAvaProcessingStatus = 'cmGetAvaProcessingStatus'
 }
-
-interface IOnvifCameraSettings {
-    [AvaOnvifCameraCapability.wpVideoPlaybackHost]: string;
-}
-
-const defaultVideoPlaybackHost = 'http://localhost:8094';
-const defaultInferenceTimeout = 5;
-const defaultMaxVideoInferenceTime = 10;
 
 interface ISetOnvifMediaProfileCommandRequestParams {
     mediaProfileToken: string;
@@ -123,11 +129,6 @@ enum AvaEdgeOperationsCapability {
     evRecordingStarted = 'evRecordingStarted',
     evRecordingStopped = 'evRecordingStopped',
     evRecordingAvailable = 'evRecordingAvailable',
-    wpMaxVideoInferenceTime = 'wpMaxVideoInferenceTime'
-}
-
-interface IAvaEdgeOperationsSettings {
-    [AvaEdgeOperationsCapability.wpMaxVideoInferenceTime]: number;
 }
 
 enum AvaEdgeDiagnosticsCapability {
@@ -148,9 +149,7 @@ interface IAvaEdgeDiagnosticsSettings {
 }
 
 export enum AiInferenceCapability {
-    tlInferenceEntity = 'tlInferenceEntity',
-    evInferenceEventVideoUrl = 'evInferenceEventVideoUrl',
-    wpInferenceTimeout = 'wpInferenceTimeout'
+    tlInferenceEntity = 'tlInferenceEntity'
 }
 
 enum UnmodeledTelemetry {
@@ -166,16 +165,12 @@ interface IAvaInference {
     [key: string]: any;
 }
 
-interface IAiInferenceSettings {
-    [AiInferenceCapability.wpInferenceTimeout]: number;
-}
-
 export class AvaCameraDevice {
     private server: Server;
     private iotCentralPluginModule: IIotCentralPluginModule;
     private onvifModuleId: string;
+    private avaEdgeModuleId: string;
     private appScopeId: string;
-    private avaPipeline: AvaPipeline;
     private cameraInfo: ICameraProvisionInfo;
     private cameraDeviceInformationInternal: ICameraDeviceInformation;
     private currentMediaProfileToken: string;
@@ -186,23 +181,22 @@ export class AvaCameraDevice {
 
     private deferredStart = defer();
     private healthState = HealthState.Good;
-    private lastInferenceTime: moment.Moment = moment.utc(0);
-    private videoInferenceStartTime: moment.Moment = moment.utc();
-    private onvifCameraSettings: IOnvifCameraSettings = {
-        wpVideoPlaybackHost: defaultVideoPlaybackHost
+    private avaProcessingContext: IAvaProcessingContext = {
+        avaLivePipeline: '',
+        avaPipelineTopology: '',
+        avaLivePipelineHeader: {
+            ['@apiVersion']: '1.0',
+            name: ''
+        },
+        avaPipelineTopologyHeader: {
+            ['@apiVersion']: '1.0',
+            name: ''
+        }
     };
-    private avaEdgeOperationsSettings: IAvaEdgeOperationsSettings = {
-        [AvaEdgeOperationsCapability.wpMaxVideoInferenceTime]: defaultMaxVideoInferenceTime
-    };
+
     private avaEdgeDiagnosticsSettings: IAvaEdgeDiagnosticsSettings = {
         [AvaEdgeDiagnosticsCapability.wpDebugTelemetry]: false
     };
-    private aiInferenceSettings: IAiInferenceSettings = {
-        [AiInferenceCapability.wpInferenceTimeout]: defaultInferenceTimeout
-    };
-    private inferenceInterval: NodeJS.Timeout;
-    private createVideoLinkForInferenceTimeout = false;
-
     constructor(
         server: Server,
         appScopeId: string,
@@ -211,6 +205,7 @@ export class AvaCameraDevice {
         this.server = server;
         this.iotCentralPluginModule = server.settings.app.iotCentral;
         this.onvifModuleId = this.server.settings.app.cameraGateway.moduleEnvironmentConfig.onvifModuleId;
+        this.avaEdgeModuleId = this.server.settings.app.cameraGateway.moduleEnvironmentConfig.avaEdgeModuleId;
         this.appScopeId = appScopeId;
         this.cameraInfo = cameraInfo;
     }
@@ -228,40 +223,39 @@ export class AvaCameraDevice {
     }
 
     public get avaPipelineTopologyName(): string {
-        return this.avaPipeline?.pipelineTopologyName || '';
+        return this.avaProcessingContext.avaPipelineTopologyHeader?.name || '';
     }
 
     public get avaLivePipelineName(): string {
-        return this.avaPipeline?.livePipelineName || '';
+        return this.avaProcessingContext.avaLivePipelineHeader?.name || '';
     }
 
-    public async connectDeviceClient(
-        dpsHubConnectionString: string,
-        avaPipelineTopologyName?: string,
-        avaLivePipelineName?: string,
-        onvifMediaProfileToken?: string
-    ): Promise<IClientConnectResult> {
+    public async connectDeviceClient(cachedDeviceProvisionInfo: ICachedDeviceProvisionInfo): Promise<IClientConnectResult> {
         let clientConnectionResult: IClientConnectResult = {
             clientConnectionStatus: false,
             clientConnectionMessage: ''
         };
 
         try {
-            clientConnectionResult = await this.connectDeviceClientInternal(dpsHubConnectionString);
+            clientConnectionResult = await this.connectDeviceClientInternal(cachedDeviceProvisionInfo.dpsConnectionString);
 
             if (clientConnectionResult.clientConnectionStatus) {
                 await this.deferredStart.promise;
 
                 await this.deviceReady();
 
-                if (avaPipelineTopologyName && avaLivePipelineName && onvifMediaProfileToken) {
-                    const startAvaPipelineResult = await this.startAvaProcessing(avaPipelineTopologyName, avaLivePipelineName, onvifMediaProfileToken);
+                if (cachedDeviceProvisionInfo.avaPipelineTopologyName && cachedDeviceProvisionInfo.avaLivePipelineName) {
+                    const startAvaPipelineResult = await this.startAvaProcessing(
+                        cachedDeviceProvisionInfo.avaPipelineTopologyName,
+                        cachedDeviceProvisionInfo.avaLivePipelineName,
+                        cachedDeviceProvisionInfo.mediaProfileToken
+                    );
 
-                    this.avaProcessingState = startAvaPipelineResult ? CameraProcessingState.Inactive : CameraProcessingState.Active;
+                    // eslint-disable-next-line max-len
+                    this.server.log([this.cameraInfo.cameraId, 'info'], `${startAvaPipelineResult ? 'Started' : 'Failed to start'} pipeline processing from cached device provision info: pipelineTopologyName: ${cachedDeviceProvisionInfo.avaPipelineTopologyName}, livePipelineName: ${cachedDeviceProvisionInfo.avaLivePipelineName}`);
                 }
-                else {
-                    this.avaProcessingState = CameraProcessingState.Inactive;
-                }
+
+                this.avaProcessingState = CameraProcessingState.Inactive;
 
                 await this.sendMeasurement({
                     [AvaOnvifCameraCapability.stIoTCentralClientState]: IoTCentralClientState.Connected,
@@ -273,7 +267,7 @@ export class AvaCameraDevice {
             clientConnectionResult.clientConnectionStatus = false;
             clientConnectionResult.clientConnectionMessage = `An error occurred while accessing the device twin properties`;
 
-            this.server.log([this.cameraInfo.cameraId, 'error'], clientConnectionResult.clientConnectionMessage);
+            this.server.log([this.cameraInfo.cameraId, 'error'], `${clientConnectionResult.clientConnectionMessage}: ${ex.message}`);
         }
 
         return clientConnectionResult;
@@ -292,10 +286,8 @@ export class AvaCameraDevice {
         this.server.log([this.cameraInfo.cameraId, 'info'], `Deleting camera device instance for cameraId: ${this.cameraInfo.cameraId}`);
 
         try {
-            if (this.avaPipeline) {
-                this.server.log([this.cameraInfo.cameraId, 'info'], `Deactivating pipeline instance: ${this.avaPipeline.livePipelineName}`);
-                await this.avaPipeline.deleteAvaPipeline();
-            }
+            this.server.log([this.cameraInfo.cameraId, 'info'], `Deactivating pipeline instance: ${this.avaLivePipelineName}`);
+            await this.deleteAvaPipeline();
 
             if (this.deviceTwin) {
                 this.deviceTwin.removeAllListeners();
@@ -408,8 +400,6 @@ export class AvaCameraDevice {
 
         this.server.log([this.cameraInfo.cameraId, 'info'], `processAvaInferences: received ${inferences.length} inferences`);
 
-        this.lastInferenceTime = moment.utc();
-
         try {
             for (const inference of inferences) {
                 let inferenceEntity;
@@ -483,36 +473,9 @@ export class AvaCameraDevice {
                     : desiredChangedSettings[setting];
 
                 switch (setting) {
-                    case AvaOnvifCameraCapability.wpVideoPlaybackHost:
-                        patchedProperties[setting] = {
-                            value: (this.onvifCameraSettings[setting] as any) = value || defaultVideoPlaybackHost,
-                            ac: 200,
-                            ad: 'completed',
-                            av: desiredChangedSettings['$version']
-                        };
-                        break;
-
-                    case AvaEdgeOperationsCapability.wpMaxVideoInferenceTime:
-                        patchedProperties[setting] = {
-                            value: (this.avaEdgeOperationsSettings[setting] as any) = value || defaultMaxVideoInferenceTime,
-                            ac: 200,
-                            ad: 'completed',
-                            av: desiredChangedSettings['$version']
-                        };
-                        break;
-
                     case AvaEdgeDiagnosticsCapability.wpDebugTelemetry:
                         patchedProperties[setting] = {
                             value: (this.avaEdgeDiagnosticsSettings[setting] as any) = value || false,
-                            ac: 200,
-                            ad: 'completed',
-                            av: desiredChangedSettings['$version']
-                        };
-                        break;
-
-                    case AiInferenceCapability.wpInferenceTimeout:
-                        patchedProperties[setting] = {
-                            value: (this.aiInferenceSettings[setting] as any) = value || defaultInferenceTimeout,
                             ac: 200,
                             ad: 'completed',
                             av: desiredChangedSettings['$version']
@@ -577,52 +540,6 @@ export class AvaCameraDevice {
         catch (ex) {
             this.server.log([this.cameraInfo.cameraId, 'error'], `sendMeasurement: ${ex.message}`);
             this.server.log([this.cameraInfo.cameraId, 'error'], `inspect the error: ${JSON.stringify(ex, null, 4)}`);
-        }
-    }
-
-    private async inferenceTimer(): Promise<void> {
-        try {
-            if (this.debugTelemetry()) {
-                this.server.log([this.cameraInfo.cameraId, 'info'], `Inference timer`);
-            }
-
-            const videoInferenceDuration = moment.duration(moment.utc().diff(this.videoInferenceStartTime));
-
-            if (moment.duration(moment.utc().diff(this.lastInferenceTime)) >= moment.duration(this.aiInferenceSettings[AiInferenceCapability.wpInferenceTimeout], 'seconds')) {
-                if (this.createVideoLinkForInferenceTimeout) {
-                    this.createVideoLinkForInferenceTimeout = false;
-
-                    this.server.log([this.cameraInfo.cameraId, 'info'], `InferenceTimeout reached`);
-
-                    await this.sendMeasurement({
-                        [AiInferenceCapability.evInferenceEventVideoUrl]: this.avaPipeline.createInferenceVideoLink(
-                            this.onvifCameraSettings[AvaOnvifCameraCapability.wpVideoPlaybackHost],
-                            this.videoInferenceStartTime,
-                            Math.trunc(videoInferenceDuration.asSeconds()))
-                    });
-                }
-
-                this.videoInferenceStartTime = moment.utc();
-            }
-            else {
-                this.createVideoLinkForInferenceTimeout = true;
-
-                if (videoInferenceDuration >= moment.duration(this.avaEdgeOperationsSettings[AvaEdgeOperationsCapability.wpMaxVideoInferenceTime], 'seconds')) {
-                    this.server.log([this.cameraInfo.cameraId, 'info'], `MaxVideoInferenceTime reached`);
-
-                    await this.sendMeasurement({
-                        [AiInferenceCapability.evInferenceEventVideoUrl]: this.avaPipeline.createInferenceVideoLink(
-                            this.onvifCameraSettings[AvaOnvifCameraCapability.wpVideoPlaybackHost],
-                            this.videoInferenceStartTime,
-                            Math.trunc(videoInferenceDuration.asSeconds()))
-                    });
-
-                    this.videoInferenceStartTime = moment.utc();
-                }
-            }
-        }
-        catch (ex) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `Inference timer error: ${ex.message}`);
         }
     }
 
@@ -771,7 +688,7 @@ export class AvaCameraDevice {
             response.message = `Retrieved ONVIF camera properties successfully`;
         }
         catch (ex) {
-            response.statusCode = 500;
+            response.statusCode = 400;
             response.message = `Error getting ONVIF device properties: ${ex.message}`;
 
             this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
@@ -812,7 +729,7 @@ export class AvaCameraDevice {
             });
         }
         catch (ex) {
-            response.statusCode = 500;
+            response.statusCode = 400;
             response.message = `Error getting ONVIF device media profiles: ${ex.message}`;
 
             this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
@@ -845,7 +762,7 @@ export class AvaCameraDevice {
             }
         }
         catch (ex) {
-            response.statusCode = 500;
+            response.statusCode = 400;
             response.message = `Error setting ONVIF device media profile: ${ex.message}`;
 
             this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
@@ -876,7 +793,7 @@ export class AvaCameraDevice {
             response.payload = serviceResponse.status === 200 ? serviceResponse.payload : '';
         }
         catch (ex) {
-            response.statusCode = 500;
+            response.statusCode = 400;
             response.message = `An error occurred while getting ONVIF stream uri from device id: ${this.cameraInfo.cameraId}`;
             this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
@@ -936,14 +853,14 @@ export class AvaCameraDevice {
                 });
             }
             else {
-                response.statusCode = 500;
+                response.statusCode = 400;
                 response.message = `An error occurred while uploading the captured image to the blob storage service`;
 
                 this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
             }
         }
         catch (ex) {
-            response.statusCode = 500;
+            response.statusCode = 400;
             response.message = `An error occurred while attempting to capture an image on device: ${this.cameraInfo.cameraId}: ${ex.message}`;
 
             this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
@@ -1011,98 +928,173 @@ export class AvaCameraDevice {
         return avaPipelineContent;
     }
 
-    private async initializeAvaProcessor(avaPipelineTopologyName: string, avaLivePipelineName: string, mediaProfileToken: string): Promise<boolean> {
-        let rtspVideoStreamUrl;
+    private async getRtspVideoStreamUrl(mediaProfileToken: string): Promise<string> {
+        let rtspVideoStreamUrl = '';
 
         if (!this.cameraInfo?.isOnvifCamera) {
             rtspVideoStreamUrl = this.cameraInfo?.plainCameraInformation?.rtspVideoStream;
             if (!rtspVideoStreamUrl) {
                 this.server.log([this.cameraInfo.cameraId, 'error'], `No RTSP streaming url was provided`);
-                return false;
+                return '';
             }
         }
         else {
             const getRtspStreamUrlResponse = await this.getOnvifRtspStreamUrl(mediaProfileToken);
             if (getRtspStreamUrlResponse.statusCode !== 200) {
                 this.server.log([this.cameraInfo.cameraId, 'error'], `Error obtaining ONVIF RTSP streaming url`);
-                return false;
+                return '';
             }
 
             rtspVideoStreamUrl = getRtspStreamUrlResponse.payload;
         }
 
-        const avaLivePipeline = await this.getPipelineContent(avaLivePipelineName);
-        if (!avaLivePipeline) {
-            return false;
+        return rtspVideoStreamUrl;
+    }
+
+    private async initializeAvaProcessorContext(avaPipelineTopologyName: string, avaLivePipelineName: string, mediaProfileToken: string): Promise<boolean> {
+        try {
+            this.avaProcessingContext.avaLivePipeline = await this.getPipelineContent(avaLivePipelineName);
+            if (!this.avaProcessingContext.avaLivePipeline) {
+                return false;
+            }
+
+            this.avaProcessingContext.avaPipelineTopology = await this.getPipelineContent(avaPipelineTopologyName);
+            if (!this.avaProcessingContext.avaPipelineTopology) {
+                return false;
+            }
+
+            this.avaProcessingContext.avaLivePipeline.name = this.cameraInfo.cameraId;
+
+            this.avaProcessingContext.avaLivePipelineHeader = {
+                ['@apiVersion']: this.avaProcessingContext.avaPipelineTopology['@apiVersion'],
+                name: this.avaProcessingContext.avaLivePipeline.name
+            };
+
+            this.avaProcessingContext.avaPipelineTopologyHeader = {
+                ['@apiVersion']: this.avaProcessingContext.avaPipelineTopology['@apiVersion'],
+                name: this.avaProcessingContext.avaPipelineTopology.name
+            };
+
+            this.server.log([this.cameraInfo.cameraId, 'info'], `Successfully created AVA pipeline context - live: ${avaLivePipelineName}, topology: ${avaPipelineTopologyName}`);
+
+
+            await this.server.settings.app.cameraGateway.updateCachedDeviceInfo(
+                DeviceCacheOperation.Update,
+                this.cameraInfo.cameraId,
+                {
+                    cameraInfo: this.cameraInfo,
+                    cachedDeviceProvisionInfo: {
+                        avaPipelineTopologyName,
+                        avaLivePipelineName,
+                        mediaProfileToken
+                    }
+                }
+            );
+
+            if (this.debugTelemetry()) {
+                this.server.log([this.cameraInfo.cameraId, 'info'], `Live Pipeline name: ${this.avaProcessingContext.avaLivePipelineHeader.name}`);
+                this.server.log([this.cameraInfo.cameraId, 'info'], `Live Pipeline content: ${JSON.stringify(this.avaProcessingContext.avaLivePipeline, null, 4)}`);
+                this.server.log([this.cameraInfo.cameraId, 'info'], `Pipeline Topology name: ${this.avaProcessingContext.avaPipelineTopologyHeader.name}`);
+                this.server.log([this.cameraInfo.cameraId, 'info'], `Pipeline Topology content: ${JSON.stringify(this.avaProcessingContext.avaPipelineTopology, null, 4)}`);
+            }
+        }
+        catch (ex) {
+            this.server.log([this.cameraInfo.cameraId, 'error'], `Error creating AVA pipeline processing context - live: ${avaLivePipelineName}, topology: ${avaPipelineTopologyName}`);
         }
 
-        const avaPipelineTopology = await this.getPipelineContent(avaPipelineTopologyName);
-        if (!avaPipelineTopology) {
-            return false;
+        return true;
+    }
+
+    private async uninitializeAvaProcessorContext(): Promise<boolean> {
+        try {
+            this.avaProcessingContext.avaLivePipeline = {};
+            this.avaProcessingContext.avaPipelineTopology = {};
+
+            this.avaProcessingContext.avaLivePipelineHeader = {
+                ['@apiVersion']: '1.0',
+                name: ''
+            };
+
+            this.avaProcessingContext.avaPipelineTopologyHeader = {
+                ['@apiVersion']: '1.0',
+                name: ''
+            };
+
+            await this.server.settings.app.cameraGateway.updateCachedDeviceInfo(
+                DeviceCacheOperation.Update,
+                this.cameraInfo.cameraId,
+                {
+                    cameraInfo: this.cameraInfo,
+                    cachedDeviceProvisionInfo: {
+                        avaPipelineTopologyName: null,
+                        avaLivePipelineName: null,
+                        mediaProfileToken: null
+                    }
+                }
+            );
+
+            this.server.log([this.cameraInfo.cameraId, 'info'], `Cleared cached pipeline context for device: ${this.cameraInfo.cameraId}`);
         }
-
-        this.avaPipeline = new AvaPipeline(this.server, this.cameraInfo, rtspVideoStreamUrl, avaPipelineTopology, avaLivePipeline);
-        if (!this.avaPipeline) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `Error creating AvaPipeline object: {${avaPipelineTopologyName}:${avaLivePipelineName}}`);
-            return false;
-        }
-
-        this.server.log([this.cameraInfo.cameraId, 'info'], `Successfully created AVA pipeline - topology: ${avaPipelineTopologyName}, live: ${avaLivePipelineName}`);
-
-        if (this.debugTelemetry()) {
-            this.server.log([this.cameraInfo.cameraId, 'info'], `Live Pipeline name: ${this.avaPipeline.livePipelineName}`);
-            this.server.log([this.cameraInfo.cameraId, 'info'], `Live Pipeline content: ${JSON.stringify(this.avaPipeline.livePipeline, null, 4)}`);
-            this.server.log([this.cameraInfo.cameraId, 'info'], `Pipeline Topology name: ${this.avaPipeline.pipelineTopologyName}`);
-            this.server.log([this.cameraInfo.cameraId, 'info'], `Pipeline Topology content: ${JSON.stringify(this.avaPipeline.pipelineTopology, null, 4)}`);
+        catch (ex) {
+            this.server.log([this.cameraInfo.cameraId, 'error'], `Error uninitializeing AVA processor context for device: ${this.cameraInfo.cameraId}`);
         }
 
         return true;
     }
 
     private async startAvaProcessing(avaPipelineTopologyName: string, avaLivePipelineName: string, mediaProfileToken: string): Promise<boolean> {
-        const initializeAvaProcessorResult = await this.initializeAvaProcessor(avaPipelineTopologyName, avaLivePipelineName, mediaProfileToken);
+        let startAvaPipelineResult = true;
 
-        if (!initializeAvaProcessorResult || !this.avaPipeline) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `Could not create an instance of AVA pipeline`);
-            return false;
+        try {
+            const initializeContextResult = await this.initializeAvaProcessorContext(avaPipelineTopologyName, avaLivePipelineName, mediaProfileToken);
+            if (!initializeContextResult) {
+                this.server.log([this.cameraInfo.cameraId, 'error'], `Could not create AVA pipeline processing context`);
+                return false;
+            }
+
+            const rtspVideoStreamUrl = await this.getRtspVideoStreamUrl(mediaProfileToken);
+            if (!rtspVideoStreamUrl) {
+                return false;
+            }
+
+            startAvaPipelineResult = await this.startAvaPipeline(rtspVideoStreamUrl);
+
+            this.avaProcessingState = startAvaPipelineResult ? CameraProcessingState.Active : CameraProcessingState.Inactive;
+            await this.sendMeasurement({
+                [AvaOnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
+            });
         }
+        catch (ex) {
+            this.server.log([this.cameraInfo.cameraId, 'error'], `Error attempting to start AVA processing: ${ex.message}`);
 
-        const avaRecordingAssetName = `${this.appScopeId}-${this.iotCentralPluginModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`;
-        const startAvaPipelineResult = await this.avaPipeline.startAvaPipeline(avaRecordingAssetName);
-
-        if (startAvaPipelineResult) {
-            this.lastInferenceTime = moment.utc(0);
-            this.videoInferenceStartTime = moment.utc();
-            this.createVideoLinkForInferenceTimeout = false;
-
-            this.inferenceInterval = setInterval(async () => {
-                await this.inferenceTimer();
-            }, 1000);
+            startAvaPipelineResult = false;
         }
-
-        this.avaProcessingState = startAvaPipelineResult ? CameraProcessingState.Active : CameraProcessingState.Inactive;
-        await this.sendMeasurement({
-            [AvaOnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
-        });
 
         return startAvaPipelineResult;
     }
 
     private async stopAvaProcessing(): Promise<boolean> {
-        clearInterval(this.inferenceInterval);
-        this.inferenceInterval = null;
+        let stopAvaPipelineResult = true;
 
-        if (!this.avaPipeline) {
-            this.server.log([this.cameraInfo.cameraId, 'error'], `No AVA pipelne instance exists`);
-            return;
+        if (!this.avaLivePipelineName) {
+            this.server.log([this.cameraInfo.cameraId, 'error'], `No AVA processing context exists to stop processing`);
+
+            return false;
         }
 
-        const stopAvaPipelineResult = this.avaPipeline.stopAvaPipeline();
+        try {
+            stopAvaPipelineResult = await this.stopAvaPipeline();
 
-        this.avaProcessingState = CameraProcessingState.Inactive;
-        await this.sendMeasurement({
-            [AvaOnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
-        });
+            this.avaProcessingState = CameraProcessingState.Inactive;
+            await this.sendMeasurement({
+                [AvaOnvifCameraCapability.stCameraProcessingState]: this.avaProcessingState
+            });
+
+            await this.uninitializeAvaProcessorContext();
+        }
+        catch (ex) {
+            this.server.log([this.cameraInfo.cameraId, 'error'], `Error attempting to stop AVA processing: ${ex.message}`);
+        }
 
         return stopAvaPipelineResult;
     }
@@ -1173,7 +1165,7 @@ export class AvaCameraDevice {
                         response.message = `Camera restart command completed`;
                     }
                     else {
-                        response.statusCode = 500;
+                        response.statusCode = 400;
                         response.message = `An error occurred while attempting to restart the camera device`;
                     }
 
@@ -1200,7 +1192,7 @@ export class AvaCameraDevice {
                             response.message = `AVA edge processing started`;
                         }
                         else {
-                            response.statusCode = 500;
+                            response.statusCode = 400;
                             response.message = `AVA edge processing failed to start`;
                         }
                     }
@@ -1215,7 +1207,7 @@ export class AvaCameraDevice {
                         response.message = `AVA edge processing stopped`;
                     }
                     else {
-                        response.statusCode = 500;
+                        response.statusCode = 400;
                         response.message = `AVA edge processing failed to stop`;
                     }
 
@@ -1236,12 +1228,131 @@ export class AvaCameraDevice {
             this.server.log([this.cameraInfo.cameraId, 'info'], response.message);
         }
         catch (ex) {
-            response.statusCode = 500;
+            response.statusCode = 400;
             response.message = `An error occurred executing the command ${commandRequest.methodName}: ${ex.message}`;
 
             this.server.log([this.cameraInfo.cameraId, 'error'], response.message);
         }
 
         await commandResponse.send(200, response);
+    }
+
+    private async startAvaPipeline(rtspVideoStreamUrl: string): Promise<boolean> {
+        this.server.log([this.cameraInfo.cameraId, this.cameraInfo.cameraId, 'info'], `startAvaPipeline`);
+
+        let result = false;
+
+        try {
+            await this.stopAvaPipeline();
+
+            result = await this.setTopologyPipeline();
+
+            if (result) {
+                result = await this.setLivePipeline(rtspVideoStreamUrl);
+            }
+
+            if (result) {
+                result = await this.activateLivePipeline();
+            }
+        }
+        catch (ex) {
+            this.server.log([this.cameraInfo.cameraId, this.cameraInfo.cameraId, 'error'], `startAvaPipeline error: ${ex.message}`);
+        }
+
+        return result;
+    }
+
+    private async stopAvaPipeline(): Promise<boolean> {
+        this.server.log([this.cameraInfo.cameraId, this.cameraInfo.cameraId, 'info'], `stopAvaPipeline`);
+
+        let result = false;
+
+        try {
+            // await this.deactivateLivePipeline();
+            await this.deleteAvaPipeline();
+
+            result = true;
+        }
+        catch (ex) {
+            this.server.log([this.cameraInfo.cameraId, this.cameraInfo.cameraId, 'error'], `stopAvaPipeline error: ${ex.message}`);
+        }
+
+        return result;
+    }
+
+    private async deleteAvaPipeline(): Promise<boolean> {
+        this.server.log([this.cameraInfo.cameraId, this.cameraInfo.cameraId, 'info'], `deleteAvaPipeline`);
+
+        let result = false;
+
+        try {
+            await this.deactivateLivePipeline();
+            await this.deleteLivePipeline();
+            await this.deletePipelineTopology();
+
+            result = true;
+        }
+        catch (ex) {
+            this.server.log([this.cameraInfo.cameraId, this.cameraInfo.cameraId, 'error'], `deleteAvaPipeline error: ${ex.message}`);
+        }
+
+        return result;
+    }
+
+    private async setTopologyPipeline(): Promise<boolean> {
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.SetTopology, this.avaProcessingContext.avaPipelineTopology);
+
+        return response.status >= 200 && response.status < 300;
+    }
+
+    private async deletePipelineTopology(): Promise<boolean> {
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeleteTopology, this.avaProcessingContext.avaPipelineTopologyHeader);
+
+        return response.status >= 200 && response.status < 300;
+    }
+
+    private setLivePipelineParam(paramName: string, value: any): void {
+        if (!paramName || value === undefined) {
+            this.server.log([this.cameraInfo.cameraId, 'error'], `setInstanceParam error - param: ${paramName}, value: ${value}`);
+            return;
+        }
+
+        const params = this.avaProcessingContext.avaLivePipeline.properties?.parameters || [];
+        const param = params.find(item => item.name === paramName);
+        if (!param) {
+            this.server.log([this.cameraInfo.cameraId, 'warning'], `setInstanceParam no param named: ${paramName}`);
+            return;
+        }
+
+        param.value = value;
+    }
+
+    private async setLivePipeline(rtspVideoStreamUrl: string): Promise<boolean> {
+        this.setLivePipelineParam('rtspUrl', rtspVideoStreamUrl);
+        this.setLivePipelineParam('rtspAuthUsername', this.cameraInfo.username);
+        this.setLivePipelineParam('rtspAuthPassword', this.cameraInfo.password);
+        this.setLivePipelineParam('assetName', `${this.appScopeId}-${this.iotCentralPluginModule.deviceId}-${this.cameraInfo.cameraId}-${moment.utc().format('YYYYMMDD-HHmmss')}`);
+
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.SetLivePipeline, this.avaProcessingContext.avaLivePipeline);
+
+        return response.status >= 200 && response.status < 300;
+    }
+
+    private async deleteLivePipeline(): Promise<boolean> {
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeleteLivePipeline, this.avaProcessingContext.avaLivePipelineHeader);
+
+        return response.status >= 200 && response.status < 300;
+    }
+
+    private async activateLivePipeline(): Promise<boolean> {
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.ActivateLivePipeline, this.avaProcessingContext.avaLivePipelineHeader);
+
+        return response.status >= 200 && response.status < 300;
+    }
+
+    private async deactivateLivePipeline(): Promise<boolean> {
+        const response = await this.iotCentralPluginModule.invokeDirectMethod(this.avaEdgeModuleId, AvaDirectMethodCommands.DeactivateLivePipeline, this.avaProcessingContext.avaLivePipelineHeader);
+
+        return response.status >= 200 && response.status < 300;
     }
 }
