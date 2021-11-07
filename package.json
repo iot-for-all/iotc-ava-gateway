@@ -32,8 +32,7 @@
         "lodash.set": "^4.3.2",
         "moment": "^2.29.1",
         "pjson": "^1.0.9",
-        "spryly": "^2.1.0",
-        "uuid": "^8.3.2"
+        "spryly": "^2.1.0"
     },
     "devDependencies": {
         "@types/hapi__hapi": "^20.0.8",

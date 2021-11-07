@@ -1,0 +1,30 @@
+{
+    "@apiVersion": "1.0",
+    "name": "",
+    "properties": {
+        "topologyName": "AvaIotcObjectDetectionGrpc",
+        "description": "Analyzing live video using gRPC Extension with IoT Central",
+        "parameters": [
+            {
+                "name": "rtspUrl",
+                "value": ""
+            },
+            {
+                "name": "rtspAuthUsername",
+                "value": ""
+            },
+            {
+                "name": "rtspAuthPassword",
+                "value": ""
+            },
+            {
+                "name": "assetName",
+                "value": ""
+            },
+            {
+                "name": "inferencingUrl",
+                "value": "tcp://avaExtension:44000"
+            }
+        ]
+    }
+}

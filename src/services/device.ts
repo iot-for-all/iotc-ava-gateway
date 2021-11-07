@@ -148,8 +148,18 @@ interface IAvaEdgeDiagnosticsSettings {
     [AvaEdgeDiagnosticsCapability.wpDebugTelemetry]: boolean;
 }
 
+interface IAvaInferenceEntity {
+    value: string;
+    confidence: number;
+}
+
 export enum AiInferenceCapability {
     tlInferenceEntity = 'tlInferenceEntity'
+}
+
+interface IAvaFullInferenceEntity {
+    type: string;
+    [key: string]: any;
 }
 
 enum UnmodeledTelemetry {
@@ -160,10 +170,12 @@ enum EntityType {
     Entity = 'entity',
     Event = 'event'
 }
-interface IAvaInference {
-    type: string;
-    [key: string]: any;
+
+interface IAvaInferenceTelemetry {
+    [AiInferenceCapability.tlInferenceEntity]?: IAvaInferenceEntity;
+    [UnmodeledTelemetry.tlFullInferenceEntity]: IAvaFullInferenceEntity;
 }
+
 
 export class AvaCameraDevice {
     private server: Server;
@@ -392,7 +404,7 @@ export class AvaCameraDevice {
         }
     }
 
-    public async processAvaInferences(inferences: IAvaInference[]): Promise<void> {
+    public async processAvaInferences(inferences: IAvaFullInferenceEntity[]): Promise<void> {
         if (!Array.isArray(inferences) || !this.deviceClient) {
             this.server.log([this.cameraInfo.cameraId, 'error'], `Missing inferences array or client not connected`);
             return;
@@ -402,21 +414,17 @@ export class AvaCameraDevice {
 
         try {
             for (const inference of inferences) {
-                let inferenceEntity;
-
-                if (inference.type === EntityType.Entity) {
-                    inferenceEntity = {
+                const inferenceTelemetry: IAvaInferenceTelemetry = {
+                    ...(inference.type === EntityType.Entity && {
                         [AiInferenceCapability.tlInferenceEntity]: {
                             value: inference.entity?.tag?.value,
                             confidence: inference.entity?.tag?.confidence
                         }
-                    };
-                }
+                    }),
+                    [UnmodeledTelemetry.tlFullInferenceEntity]: inference
+                };
 
-                await this.sendMeasurement({
-                    [UnmodeledTelemetry.tlFullInferenceEntity]: inference,
-                    ...inferenceEntity
-                });
+                await this.sendMeasurement(inferenceTelemetry);
             }
         }
         catch (ex) {
