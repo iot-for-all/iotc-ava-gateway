@@ -771,6 +771,17 @@
                 "schema": "string"
             },
             {
+                "@type": [
+                    "Telemetry",
+                    "Event"
+                ],
+                "displayName": {
+                    "en": "RTSP Ingestion Session Ended"
+                },
+                "name": "evRtspIngestionSessionEnded",
+                "schema": "string"
+            },
+            {
                 "@type": "Property",
                 "displayName": {
                     "en": "Debug Telemetry"
@@ -798,7 +809,7 @@
                 "schema": {
                     "@type": "Object",
                     "displayName": {
-                        "en": "Object"
+                        "en": "Inference Entity"
                     },
                     "fields": [
                         {

@@ -9,6 +9,8 @@ WORKDIR ${DATADIR}
 
 ADD ./configs/mediaPipelines/objectDetectionYoloV3Ext-Pipeline.json ${DATADIR}/mediaPipelines/objectDetectionYoloV3Ext-Pipeline.json
 ADD ./configs/mediaPipelines/objectDetectionYoloV3Ext-Live.json ${DATADIR}/mediaPipelines/objectDetectionYoloV3Ext-Live.json
+ADD ./configs/mediaPipelines/objectDetectionYoloV3GrpcExt-Pipeline.json ${DATADIR}/mediaPipelines/objectDetectionYoloV3GrpcExt-Pipeline.json
+ADD ./configs/mediaPipelines/objectDetectionYoloV3GrpcExt-Live.json ${DATADIR}/mediaPipelines/objectDetectionYoloV3GrpcExt-Live.json
 
 ENV WORKINGDIR /app
 WORKDIR ${WORKINGDIR}
