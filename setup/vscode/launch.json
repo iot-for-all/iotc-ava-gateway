@@ -22,35 +22,11 @@
             ]
         },
         {
-            "name": "iotcentral-gateway local",
-            "type": "node",
-            "request": "launch",
-            "console": "integratedTerminal",
-            "program": "${workspaceFolder}/src/index.ts",
-            "protocol": "inspector",
-            "smartStep": true,
-            "showAsyncStacks": true,
-            "sourceMaps": true,
-            "preLaunchTask": "ts-watch",
-            "outFiles": [
-                "${workspaceFolder}/dist/**/*.js"
-            ],
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "env": {
-                "NODE_ENV": "local",
-                "PORT": "9070",
-                "DATAMISC_ROOT": "${workspaceFolder}/configs",
-                "CONTENT_ROOT": "${workspaceFolder}/configs"
-            }
-        },
-        {
             "name": "iotcentral-gateway remote",
             "type": "node",
             "request": "attach",
             "port": 9229,
-            "address": "10.10.16.242",
+            "address": "<remote_ip_address>",
             "localRoot": "${workspaceFolder}/dist",
             "remoteRoot": "/app/dist",
             "protocol": "inspector",
