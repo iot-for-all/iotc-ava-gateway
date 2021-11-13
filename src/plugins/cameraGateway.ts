@@ -99,7 +99,8 @@ class CameraGatewayPluginModule implements ICameraGatewayPluginModule {
 
     public moduleEnvironmentConfig: IModuleEnvironmentConfig = {
         onvifModuleId: process.env.onvifModuleId || 'OnvifModule',
-        avaEdgeModuleId: process.env.avaEdgeModuleId || 'avaEdge'
+        avaEdgeModuleId: process.env.avaEdgeModuleId || 'avaEdge',
+        dpsProvisioningHost: process.env.dpsProvisioningHost || 'global.azure-devices-provisioning.net'
     };
 
     public async getCachedDeviceList(): Promise<IDeviceCacheInfo[]> {

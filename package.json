@@ -1,6 +1,6 @@
 {
     "name": "iotc-ava-edge-gateway",
-    "version": "3.1.1",
+    "version": "4.0.0",
     "description": "Azure IoT Central gateway module for Azure Video Analyzer Edge module",
     "main": "index.js",
     "scripts": {

@@ -79,6 +79,7 @@ coverage.html
 profile**.txt
 
 # project
+.vscode
 client
 configs/**
 storage*/**
