@@ -161,7 +161,15 @@
         "AvaEdgeGatewayModule": {
             "properties.desired": {
                 "wpDebugTelemetry": true,
-                "wpDebugRoutedMessage": false
+                "wpDebugRoutedMessage": false,
+                "wpAppHostUri": "<YOUR_APP_URL>",
+                "wpApiToken": "<API_ACCESS_TOKEN>",
+                "wpDeviceKey": "<DEVICE_PROVISIONING_KEY>",
+                "wpScopeId": "<SCOPE_ID>",
+                "wpAvaOnvifCameraModelId": "dtmi:com:azuremedia:model:AvaOnvifCameraDevice;1",
+                "wpBlobConnectionString": "",
+                "wpBlobPipelineContainer": "",
+                "wpBlobImageCaptureContainer": ""
             }
         },
         "avaEdge": {
