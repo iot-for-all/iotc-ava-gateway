@@ -68,6 +68,12 @@
                         },
                         "type": "docker",
                         "env": {
+                            "LOCAL_USER_ID": {
+                                "value": "1010"
+                            },
+                            "LOCAL_GROUP_ID": {
+                                "value": "1010"
+                            },
                             "EnableDiagnosticLogging": {
                                 "value": "True"
                             }

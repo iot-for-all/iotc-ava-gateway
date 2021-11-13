@@ -158,6 +158,53 @@
                 "name": "wpDebugRoutedMessage",
                 "writable": true,
                 "schema": "boolean"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "appHostUri"
+                },
+                "comment": "The host uri that identifies your app. Ex. [yourapp.azureiotcentral.com]",
+                "name": "wpAppHostUri",
+                "writable": true,
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "apiToken"
+                },
+                "comment": "API token with role App ",
+                "name": "wpApiToken",
+                "writable": true,
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "deviceKey"
+                },
+                "name": "wpDeviceKey",
+                "writable": true,
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "scopeId"
+                },
+                "name": "wpScopeId",
+                "writable": true,
+                "schema": "string"
+            },
+            {
+                "@type": "Property",
+                "displayName": {
+                    "en": "avaOnvifCameraModelId"
+                },
+                "name": "wpAvaOnvifCameraModelId",
+                "writable": true,
+                "schema": "string"
             }
         ]
     },
@@ -262,17 +309,6 @@
                     "Event"
                 ],
                 "displayName": {
-                    "en": "Configure Gateway"
-                },
-                "name": "evConfigureGateway",
-                "schema": "string"
-            },
-            {
-                "@type": [
-                    "Telemetry",
-                    "Event"
-                ],
-                "displayName": {
                     "en": "Create Camera"
                 },
                 "name": "evCreateCamera",
@@ -343,150 +379,6 @@
                 },
                 "name": "evCameraDiscoveryCompleted",
                 "schema": "string"
-            },
-            {
-                "@type": "Command",
-                "displayName": {
-                    "en": "Configure Gateway"
-                },
-                "name": "cmConfigureGateway",
-                "request": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Configure Gateway Module Request"
-                    },
-                    "name": "ConfigureGatewayRequest",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Configure Gateway Module Request"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Gateway Module Configuration"
-                                },
-                                "name": "moduleConfig",
-                                "schema": {
-                                    "@type": "Object",
-                                    "displayName": {
-                                        "en": "Gateway Module Configuration"
-                                    },
-                                    "fields": [
-                                        {
-                                            "displayName": {
-                                                "en": "appHostUri"
-                                            },
-                                            "comment": "The host uri that identifies your app. Ex. [yourapp.azureiotcentral.com]",
-                                            "name": "appHostUri",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "apiToken"
-                                            },
-                                            "comment": "API token with role App ",
-                                            "name": "apiToken",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "deviceKey"
-                                            },
-                                            "name": "deviceKey",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "scopeId"
-                                            },
-                                            "name": "scopeId",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "dpsProvisioningHost (optional)"
-                                            },
-                                            "name": "dpsProvisioningHost",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "avaOnvifCameraModelId (optional)"
-                                            },
-                                            "name": "avaOnvifCameraModelId",
-                                            "schema": "string"
-                                        }
-                                    ]
-                                }
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Azure Blob Storage Account (optional)"
-                                },
-                                "name": "blobStorage",
-                                "schema": {
-                                    "@type": "Object",
-                                    "displayName": {
-                                        "en": "Blob Storage Parameters"
-                                    },
-                                    "fields": [
-                                        {
-                                            "displayName": {
-                                                "en": "blobConnectionString"
-                                            },
-                                            "name": "blobConnectionString",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "blobPipelineContainer"
-                                            },
-                                            "name": "blobPipelineContainer",
-                                            "schema": "string"
-                                        },
-                                        {
-                                            "displayName": {
-                                                "en": "blobImageCaptureContainer"
-                                            },
-                                            "name": "blobImageCaptureContainer",
-                                            "schema": "string"
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    }
-                },
-                "response": {
-                    "@type": "CommandPayload",
-                    "displayName": {
-                        "en": "Command Response"
-                    },
-                    "name": "CommandResponse",
-                    "schema": {
-                        "@type": "Object",
-                        "displayName": {
-                            "en": "Command Response"
-                        },
-                        "fields": [
-                            {
-                                "displayName": {
-                                    "en": "Status Code"
-                                },
-                                "name": "statusCode",
-                                "schema": "long"
-                            },
-                            {
-                                "displayName": {
-                                    "en": "Message"
-                                },
-                                "name": "message",
-                                "schema": "string"
-                            }
-                        ]
-                    }
-                }
             },
             {
                 "@type": "Command",

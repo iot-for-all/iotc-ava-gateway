@@ -39,30 +39,19 @@ import {
 import * as crypto from 'crypto';
 import * as Wreck from '@hapi/wreck';
 import { URL } from 'url';
-import { bind, emptyObj, forget, sleep } from '../utils';
+import { bind, forget, sleep } from '../utils';
 
 const ModuleName = 'CameraGatewayService';
 
-const GatewayConfig = 'gatewayConfig';
 const IotcOutputName = 'iotc';
 const defaultHealthCheckRetries = 3;
-const defaultDpsProvisioningHost = 'global.azure-devices-provisioning.net';
-const defaultAvaOnvifCameraModelId = 'dtmi:com:azuremedia:model:AvaOnvifCameraDevice;1';
 
 type DeviceOperation = 'DELETE_CAMERA' | 'SEND_EVENT' | 'SEND_INFERENCES';
 
 export interface IModuleEnvironmentConfig {
     onvifModuleId: string;
     avaEdgeModuleId: string;
-}
-
-interface IModuleConfig {
-    appHostUri: string;
-    apiToken: string;
-    deviceKey: string;
-    scopeId: string;
-    dpsProvisioningHost?: string;
-    avaOnvifCameraModelId?: string;
+    dpsProvisioningHost: string;
 }
 
 export interface ICameraProvisionInfo {
@@ -122,11 +111,6 @@ enum ModuleState {
     Active = 'active'
 }
 
-interface IConfigureGatewayCommandRequestParmas {
-    moduleConfig: IModuleConfig;
-    blobStorage: IBlobStoragePluginModuleOptions;
-}
-
 interface IDiscoverCamerasCommandRequestParams {
     timeout: number;
 }
@@ -151,7 +135,6 @@ enum AvaGatewayCapability {
     tlConnectedCameras = 'tlConnectedCameras',
     stIoTCentralClientState = 'stIoTCentralClientState',
     stModuleState = 'stModuleState',
-    evConfigureGateway = 'evConfigureGateway',
     evCreateCamera = 'evCreateCamera',
     evDeleteCamera = 'evDeleteCamera',
     evModuleStarted = 'evModuleStarted',
@@ -161,7 +144,14 @@ enum AvaGatewayCapability {
     evCameraDiscoveryCompleted = 'evCameraDiscoveryCompleted',
     wpDebugTelemetry = 'wpDebugTelemetry',
     wpDebugRoutedMessage = 'wpDebugRoutedMessage',
-    cmConfigureGateway = 'cmConfigureGateway',
+    wpAppHostUri = 'wpAppHostUri',
+    wpApiToken = 'wpApiToken',
+    wpDeviceKey = 'wpDeviceKey',
+    wpScopeId = 'wpScopeId',
+    wpAvaOnvifCameraModelId = 'wpAvaOnvifCameraModelId',
+    wpBlobConnectionString = 'wpBlobConnectionString',
+    wpBlobPipelineContainer = 'wpBlobPipelineContainer',
+    wpBlobImageCaptureContainer = 'wpBlobImageCaptureContainer',
     cmDiscoverOnvifCameras = 'cmDiscoverOnvifCameras',
     cmAddOnvifCameraDevice = 'cmAddOnvifCamera',
     cmAddCameraDevice = 'cmAddCamera',
@@ -176,6 +166,14 @@ enum AvaGatewayCapability {
 interface IAvaGatewaySettings {
     [AvaGatewayCapability.wpDebugTelemetry]: boolean;
     [AvaGatewayCapability.wpDebugRoutedMessage]: boolean;
+    [AvaGatewayCapability.wpAppHostUri]: string;
+    [AvaGatewayCapability.wpApiToken]: string;
+    [AvaGatewayCapability.wpDeviceKey]: string;
+    [AvaGatewayCapability.wpScopeId]: string;
+    [AvaGatewayCapability.wpAvaOnvifCameraModelId]: string;
+    [AvaGatewayCapability.wpBlobConnectionString]: string;
+    [AvaGatewayCapability.wpBlobPipelineContainer]: string;
+    [AvaGatewayCapability.wpBlobImageCaptureContainer]: string;
 }
 
 const AvaGatewayEdgeInputs = {
@@ -204,15 +202,17 @@ export class CameraGatewayService {
     private healthCheckFailStreak = 0;
     private moduleSettings: IAvaGatewaySettings = {
         [AvaGatewayCapability.wpDebugTelemetry]: false,
-        [AvaGatewayCapability.wpDebugRoutedMessage]: false
+        [AvaGatewayCapability.wpDebugRoutedMessage]: false,
+        [AvaGatewayCapability.wpAppHostUri]: '',
+        [AvaGatewayCapability.wpApiToken]: '',
+        [AvaGatewayCapability.wpDeviceKey]: '',
+        [AvaGatewayCapability.wpScopeId]: '',
+        [AvaGatewayCapability.wpAvaOnvifCameraModelId]: '',
+        [AvaGatewayCapability.wpBlobConnectionString]: '',
+        [AvaGatewayCapability.wpBlobPipelineContainer]: '',
+        [AvaGatewayCapability.wpBlobImageCaptureContainer]: ''
     };
     private avaCameraDeviceMap = new Map<string, AvaCameraDevice>();
-    private moduleConfig: IModuleConfig = {
-        appHostUri: '',
-        apiToken: '',
-        deviceKey: '',
-        scopeId: ''
-    };
 
     public async init(): Promise<void> {
         this.server.log([ModuleName, 'info'], 'initialize');
@@ -269,13 +269,29 @@ export class CameraGatewayService {
                         };
                         break;
 
+                    case AvaGatewayCapability.wpAppHostUri:
+                    case AvaGatewayCapability.wpApiToken:
+                    case AvaGatewayCapability.wpDeviceKey:
+                    case AvaGatewayCapability.wpScopeId:
+                    case AvaGatewayCapability.wpAvaOnvifCameraModelId:
+                    case AvaGatewayCapability.wpBlobConnectionString:
+                    case AvaGatewayCapability.wpBlobPipelineContainer:
+                    case AvaGatewayCapability.wpBlobImageCaptureContainer:
+                        patchedProperties[setting] = {
+                            value: this.moduleSettings[setting] = value || '',
+                            ac: 200,
+                            ad: 'completed',
+                            av: desiredChangedSettings['$version']
+                        };
+                        break;
+
                     default:
                         this.server.log([ModuleName, 'error'], `Received desired property change for unknown setting '${setting}'`);
                         break;
                 }
             }
 
-            if (!emptyObj(patchedProperties)) {
+            if (Object.prototype.hasOwnProperty.call(patchedProperties, 'value')) {
                 await this.iotCentralPluginModule.updateModuleProperties(patchedProperties);
             }
         }
@@ -387,15 +403,31 @@ export class CameraGatewayService {
     public async onModuleReady(): Promise<void> {
         this.server.log([ModuleName, 'info'], `Starting onModuleReady initializaton`);
 
-        const gatewayConfig = await this.server.settings.app.config.get(GatewayConfig) as IConfigureGatewayCommandRequestParmas;
-        await this.configureGateway(gatewayConfig);
+        const checkConfig = this.checkModuleConfig();
+        if (!checkConfig.result) {
+            this.server.log([ModuleName, 'error'], checkConfig.message);
+        }
 
         this.healthCheckRetries = Number(process.env.healthCheckRetries) || defaultHealthCheckRetries;
-        this.healthState = this.iotCentralPluginModule.moduleClient ? HealthState.Good : HealthState.Critical;
+        this.healthState = (checkConfig.result && this.iotCentralPluginModule.moduleClient) ? HealthState.Good : HealthState.Critical;
+
+        const blobStorageOptions: IBlobStoragePluginModuleOptions = {
+            blobConnectionString: this.moduleSettings[AvaGatewayCapability.wpBlobConnectionString],
+            blobPipelineContainer: this.moduleSettings[AvaGatewayCapability.wpBlobPipelineContainer],
+            blobImageCaptureContainer: this.moduleSettings[AvaGatewayCapability.wpBlobImageCaptureContainer]
+        };
+
+        if (blobStorageOptions.blobConnectionString && blobStorageOptions.blobPipelineContainer && blobStorageOptions.blobImageCaptureContainer) {
+            if (!(await this.server.settings.app.blobStorage.configureBlobStorageClient(blobStorageOptions))) {
+                this.server.log([ModuleName, 'error'], `An error occurred while trying to configure the blob storage client`);
+            }
+        }
+        else {
+            this.server.log([ModuleName, 'info'], `All optional blob storage configuration values were not found`);
+        }
 
         const systemProperties = await this.getSystemProperties();
 
-        this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmConfigureGateway, this.handleDirectMethod);
         this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmDiscoverOnvifCameras, this.handleDirectMethod);
         this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmGetCameraDevices, this.handleDirectMethod);
         this.iotCentralPluginModule.addDirectMethod(AvaGatewayCapability.cmAddOnvifCameraDevice, this.handleDirectMethod);
@@ -520,76 +552,13 @@ export class CameraGatewayService {
 
     private checkModuleConfig(): { result: boolean; message: string } {
         return {
-            result: !!(this.moduleConfig.appHostUri
-                && this.moduleConfig.apiToken
-                && this.moduleConfig.deviceKey
-                && this.moduleConfig.scopeId),
-            message: `Missing required module configuration parameters (appHostUri, apiToken, deviceKey, scopeId)`
+            result: !!(this.moduleSettings[AvaGatewayCapability.wpAppHostUri]
+                && this.moduleSettings[AvaGatewayCapability.wpApiToken]
+                && this.moduleSettings[AvaGatewayCapability.wpDeviceKey]
+                && this.moduleSettings[AvaGatewayCapability.wpScopeId]
+                && this.moduleSettings[AvaGatewayCapability.wpAvaOnvifCameraModelId]),
+            message: `Missing required module configuration parameters`
         };
-    }
-
-    private async configureGateway(gatewayConfiguration: IConfigureGatewayCommandRequestParmas): Promise<IModuleCommandResponse> {
-        this.server.log([ModuleName, 'info'], `configureGateway`);
-
-        const response: IModuleCommandResponse = {
-            statusCode: 200,
-            message: `Gateway configuration completed successfully`
-        };
-
-        try {
-            await this.iotCentralPluginModule.sendMeasurement({
-                [AvaGatewayCapability.evConfigureGateway]: ''
-            });
-
-            if (!gatewayConfiguration?.moduleConfig?.appHostUri
-                || !gatewayConfiguration?.moduleConfig?.apiToken
-                || !gatewayConfiguration?.moduleConfig?.deviceKey
-                || !gatewayConfiguration?.moduleConfig?.scopeId) {
-
-                response.statusCode = 400;
-                response.message = `Required gateway configuration parameters are missing`;
-
-                this.server.log([ModuleName, 'error'], response.message);
-            }
-            else {
-                this.moduleConfig = {
-                    ...gatewayConfiguration.moduleConfig,
-                    dpsProvisioningHost: gatewayConfiguration.moduleConfig?.dpsProvisioningHost || process.env.dpsProvisioningHost || defaultDpsProvisioningHost,
-                    avaOnvifCameraModelId: gatewayConfiguration.moduleConfig?.avaOnvifCameraModelId || process.env.avaOnvifCameraModelId || defaultAvaOnvifCameraModelId
-                };
-
-                const blobStorageConfig = {
-                    blobConnectionString: gatewayConfiguration?.blobStorage?.blobConnectionString || '',
-                    blobPipelineContainer: gatewayConfiguration?.blobStorage?.blobPipelineContainer || '',
-                    blobImageCaptureContainer: gatewayConfiguration?.blobStorage?.blobImageCaptureContainer || ''
-                };
-
-                if (blobStorageConfig.blobConnectionString
-                    && blobStorageConfig.blobPipelineContainer
-                    && blobStorageConfig.blobImageCaptureContainer) {
-
-                    if (!(await this.server.settings.app.blobStorage.configureBlobStorageClient(blobStorageConfig))) {
-                        this.server.log([ModuleName, 'error'], `An error occurred while trying to configure the blob storage client`);
-                    }
-                }
-                else {
-                    this.server.log([ModuleName, 'info'], `All optional blob storage configuration values were not found`);
-                }
-
-                await this.server.settings.app.config.set(GatewayConfig, {
-                    moduleConfig: this.moduleConfig,
-                    blobStorage: blobStorageConfig
-                });
-            }
-        }
-        catch (ex) {
-            response.statusCode = 400;
-            response.message = `An error occurred while setting the gateway configuration: ${ex.message}`;
-
-            this.server.log([ModuleName, 'error'], response.message);
-        }
-
-        return response;
     }
 
     private async discoverCameras(scanTimeout: number): Promise<IModuleCommandResponse> {
@@ -885,17 +854,17 @@ export class CameraGatewayService {
             let dpsConnectionString = cachedDeviceProvisionInfo?.dpsConnectionString;
 
             if (!dpsConnectionString) {
-                const deviceKey = this.computeDeviceKey(cameraInfo.cameraId, this.moduleConfig.deviceKey);
+                const deviceKey = this.computeDeviceKey(cameraInfo.cameraId, this.moduleSettings[AvaGatewayCapability.wpDeviceKey]);
 
                 const provisioningSecurityClient = new SymmetricKeySecurityClient(cameraInfo.cameraId, deviceKey);
                 const provisioningClient = ProvisioningDeviceClient.create(
-                    this.moduleConfig.dpsProvisioningHost,
-                    this.moduleConfig.scopeId,
+                    this.server.settings.app.cameraGateway.moduleEnvironmentConfig.dpsProvisioningHost,
+                    this.moduleSettings[AvaGatewayCapability.wpScopeId],
                     new ProvisioningTransport(),
                     provisioningSecurityClient);
 
                 const provisioningPayload = {
-                    iotcModelId: this.moduleConfig.avaOnvifCameraModelId,
+                    iotcModelId: this.moduleSettings[AvaGatewayCapability.wpAvaOnvifCameraModelId],
                     iotcGateway: {
                         iotcGatewayId: this.iotCentralPluginModule.deviceId,
                         iotcModuleId: this.iotCentralPluginModule.moduleId
@@ -916,7 +885,7 @@ export class CameraGatewayService {
             deviceProvisionResult.dpsProvisionMessage = `IoT Central successfully provisioned device: ${cameraInfo.cameraId}`;
             deviceProvisionResult.dpsHubConnectionString = dpsConnectionString;
 
-            deviceProvisionResult.avaCameraDevice = new AvaCameraDevice(this.server, this.moduleConfig.scopeId, cameraInfo);
+            deviceProvisionResult.avaCameraDevice = new AvaCameraDevice(this.server, this.moduleSettings[AvaGatewayCapability.wpScopeId], cameraInfo);
 
             const { clientConnectionStatus, clientConnectionMessage } = await deviceProvisionResult.avaCameraDevice.connectDeviceClient({
                 ...cachedDeviceProvisionInfo,
@@ -966,11 +935,11 @@ export class CameraGatewayService {
             this.server.log([ModuleName, 'info'], `Deleting IoT Central device instance: ${cameraId}`);
             try {
                 await this.iotcApiRequest(
-                    `https://${this.moduleConfig.appHostUri}/api/preview/devices/${cameraId}`,
+                    `https://${this.moduleSettings[AvaGatewayCapability.wpAppHostUri]}/api/preview/devices/${cameraId}`,
                     'delete',
                     {
                         headers: {
-                            Authorization: this.moduleConfig.apiToken
+                            Authorization: this.moduleSettings[AvaGatewayCapability.wpApiToken]
                         },
                         json: true
                     });
@@ -1122,11 +1091,6 @@ export class CameraGatewayService {
 
         try {
             switch (commandRequest.methodName) {
-                case AvaGatewayCapability.cmConfigureGateway: {
-                    response = await this.configureGateway(commandRequest?.payload);
-                    break;
-                }
-
                 case AvaGatewayCapability.cmDiscoverOnvifCameras: {
                     response = await this.discoverCameras((commandRequest?.payload as IDiscoverCamerasCommandRequestParams)?.timeout || 0);
                     break;
