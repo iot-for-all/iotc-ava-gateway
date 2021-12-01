@@ -1,4 +1,5 @@
-import { Server, Plugin } from '@hapi/hapi';
+import { HapiPlugin, inject } from 'spryly';
+import { Server } from '@hapi/hapi';
 import {
     ContainerCreateOptions,
     BlobServiceClient,
@@ -24,24 +25,28 @@ declare module '@hapi/hapi' {
     }
 }
 
-const PluginName = 'BlobStoragePlugin';
 const ModuleName = 'BlobStoragePluginModule';
 
-export const blobStoragePluginModule: Plugin<any> = {
-    name: 'BlobStoragePluginModule',
+export class BlobStoragePlugin implements HapiPlugin {
+    @inject('$server')
+    private server: Server;
+
+    public async init(): Promise<void> {
+        this.server.log([ModuleName, 'info'], `init`);
+    }
 
     // @ts-ignore (options)
-    register: async (server: Server, options: any) => {
-        server.log([PluginName, 'info'], 'register');
+    public async register(server: Server, options: any): Promise<void> {
+        server.log([ModuleName, 'info'], 'register');
 
         try {
             server.settings.app.blobStorage = new BlobStoragePluginModule(server);
         }
         catch (ex) {
-            server.log([PluginName, 'error'], `Error while registering : ${ex.message}`);
+            server.log([ModuleName, 'error'], `Error while registering : ${ex.message}`);
         }
     }
-};
+}
 
 class BlobStoragePluginModule implements IBlobStoragePluginModule {
     private server: Server;
