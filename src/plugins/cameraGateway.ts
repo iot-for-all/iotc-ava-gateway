@@ -4,7 +4,6 @@ import {
     IIotCentralPluginModuleOptions,
     iotCentralPluginModule
 } from './iotCentralModule';
-import { blobStoragePluginModule } from './blobStorage';
 import {
     IModuleEnvironmentConfig,
     CameraGatewayService
@@ -78,9 +77,6 @@ export class CameraGatewayPlugin implements HapiPlugin {
                 {
                     plugin: iotCentralPluginModule,
                     options: pluginOptions
-                },
-                {
-                    plugin: blobStoragePluginModule
                 }
             ]);
         }
