@@ -88,6 +88,8 @@ Now we are almost ready to publish this template, but first we have need to add 
 <img src="./media/arch_iotcgwmanifest.png" alt="IoT Central Gateway Edge Deployment Manifest" />
 
  * In your cloned project repository folder you should have a `./configs` sub-folder which contains editable copies of the contents of the `./setup` folder. For this guide we will use the deployment manifest located at `./configs/deploymentManifests/deployment.quickstart.amd64.json`.
+
+> Note: You will need to build your own docker container for this module before this manifest can be used. See the **Custom Development** section at the end of this README document for instructions showing how to build this module. After your docker container is pushed to your container registry you will need to specify it in the `deployment.quickstart.amd64.json` file in the AvaEdgeGatewayModule section's `image:` property.
  
 Open a second browser window to your IoT Central application to gather the values below. For the AvaEdgeGatewayModule module we will collect these properties:
 <img src="./media/cameragatewaytwinprops.png" alt="IoT Central Gateway Edge Deployment Manifest" />
@@ -234,7 +236,7 @@ This sample is intended to provide a reference for a developer to use as a basis
 * [Node.js](https://nodejs.org/en/download/) v14 or later
 * [Visual Studio Code](https://code.visualstudio.com/Download) with [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) extension installed
 * [Docker](https://www.docker.com/products/docker-desktop) engine
-* An [Azure Container Registry](https://docs.microsoft.com/azure/container-registry/) to host your versions of the modules
+* An [Azure Container Registry](https://docs.microsoft.com/azure/container-registry/) to host your versions of the built Docker containers. You can also use another container registry like DockerHub.
 
 ### Clone the repository and setup project
 1. If you haven't already cloned the repository, use the following command to clone it to a suitable location on your local machine:
@@ -268,7 +270,7 @@ This sample is intended to provide a reference for a developer to use as a basis
 1. Edit the `registryCredentials` section to add your Azure Container Registry and credentials.
 
 ### Build the code
-1. Use the VS Code terminal to run the docker login command. Use the same credentials that you provided in the deployment manifest for the modules.
+1. Use the VS Code terminal to run the docker login command so the docker push script can access your container registry. Use the same credentials that you provided in the deployment manifest for the modules. Remember, this can also be your own DockerHub container registry.
     ```
     docker login [your_registry_server].azurecr.io
     ```
