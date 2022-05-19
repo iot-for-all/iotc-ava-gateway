@@ -1,3 +1,15 @@
+# NOTICE OF DEPRECATION:
+This video analytics sample depends on the Azure Video Analyzer (preview) service which is now officially retired. The Azure Video Analyzer retirement notice can be viewed here:  
+https://azure.microsoft.com/en-us/updates/video-analyzer-retirement/
+
+This does not imply that any features of IoT Central are being retired or deprecated in any way. This only applies to the video analyzer edge component and features which are demonstrated in this sample.
+
+Azure Video Analyzer transition options are offered and documented here:  
+https://docs.microsoft.com/en-us/azure/azure-video-analyzer/video-analyzer-docs/transition-from-video-analyzer
+
+## The code in this sample documented below can be used during the deprecation period but will no longer work after the Azure Video Analyzer retirement date.
+<br/><br/>
+
 # Azure IoT Central gateway module for Azure Video Analyzer
 This sample demonstrates how to use Azure IoT Central to collect AI inferencing from intelligent video cameras using the Azure Video Analyer Edge module. This sample includes a custom Azure IoT Edge gateway module for IoT Central and a deployment manifest configured to deploy all the necessary components to create intelligent camera devices using the Azure Video Analyzer Edge module.
 <img src="./media/arch_pipeline.png" alt="Architecture Pipeline" />
